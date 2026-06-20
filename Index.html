@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>pizzburgfriez | Crave It. Click It. Get It.</title>
+    <style>
+        :root {
+            --primary: #ff4757;
+            --secondary: #ffa502;
+            --dark: #2f3542;
+            --light: #f1f2f6;
+            --sms: #007aff;
+            --disabled: #a4b0be;
+            --table-bg: #f0fdf4;
+            --table-text: #16a34a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+        }
+
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .brand-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary);
+            text-transform: lowercase;
+        }
+
+        .cart-icon {
+            cursor: pointer;
+            position: relative;
+            background: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1000&q=80') center/cover;
+            height: 40vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .hero h1 { font-size: 3rem; margin-bottom: 0.5rem; }
+        .hero p { font-size: 1.2rem; color: var(--secondary); }
+
+        .menu-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .menu-item {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            transition: transform 0.3s;
+        }
+
+        .menu-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .item-img {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+        }
+
+        .item-info {
+            padding: 1.5rem;
+        }
+
+        .item-title { font-size: 1.4rem; margin-bottom: 0.5rem; }
+        .item-price { color: var(--primary); font-weight: bold; font-size: 1.2rem; margin-bottom: 1rem; }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background-color: #ff6b81; }
+
+        /* Cart Sidebar */
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.1);
+            transition: 0.3s ease-in-out;
+            z-index: 200;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-sidebar.active { right: 0; }
+
+        .cart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--light);
+            padding-bottom: 1rem;
+        }
+
+        .close-cart { cursor: pointer; font-size: 1.5rem; }
+
+        .cart-items {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+        }
+
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--light);
+            gap: 10px;
+        }
+
+        .cart-item-details {
+            flex: 1;
+        }
+
+        .cart-item-details h4 {
+            font-size: 1rem;
+            margin-bottom: 2px;
+        }
+
+        /* Quantity Controller */
+        .qty-controls {
+            display: flex;
+            align-items: center;
+            background: var(--light);
+            border-radius: 15px;
+            padding: 2px;
+        }
+
+        .qty-btn {
+            background: white;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: var(--dark);
+        }
+
+        .qty-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .qty-val {
+            padding: 0 10px;
+            font-weight: bold;
+            min-width: 25px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+
+        .cart-item-price {
+            font-weight: bold;
+            min-width: 65px;
+            text-align: right;
+        }
+
+        /* Table Selector Area */
+        .table-section {
+            background-color: var(--table-bg);
+            color: var(--table-text);
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .table-section label {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .table-select {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            background: white;
+            color: var(--dark);
+            font-weight: bold;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .location-section {
+            background: #eccc68;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .location-btn {
+            background: var(--dark);
+            color: white;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* SMS Button States */
+        .sms-btn {
+            background-color: var(--disabled);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .sms-btn.enabled {
+            background-color: var(--sms);
+            cursor: pointer;
+            opacity: 1;
+        }
+        
+        .sms-btn.enabled:hover { 
+            background-color: #0056b3; 
+        }
+
+        #locationStatus, #validationMessage {
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: block;
+            font-weight: bold;
+        }
+
+        #validationMessage {
+            color: #d63031;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        /* Confirmation Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: translateY(0);
+        }
+
+        .modal-box h2 {
+            color: var(--dark);
+            margin-bottom: 1rem;
+        }
+
+        .id-badge {
+            background: #fff3cd;
+            color: #856404;
+            font-size: 2.2rem;
+            font-weight: bold;
+            padding: 0.6rem 2rem;
+            border-radius: 12px;
+            display: inline-block;
+            margin: 1rem 0;
+            border: 2px dashed #ffeeba;
+            letter-spacing: 4px;
+        }
+
+        .modal-box p {
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close-btn {
+            background-color: #25d366;
+            color: white;
+        }
+        .modal-close-btn:hover {
+            background-color: #1ebd54;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand-name">pizzburgfriez</div>
+        <div class="cart-icon" onclick="toggleCart()">🛒 Cart (<span id="cart-count">0</span>)</div>
+    </header>
+
+    <section class="hero">
+        <h1>pizzburgfriez</h1>
+        <p>The Ultimate Pizza, Burger & Fries Combo Paradise!</p>
+    </section>
+
+    <main class="menu-container">
+        <!-- Item 1 -->
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=500&q=80" alt="Pizza" class="item-img">
+            <div class="item-info">
+                <h3 class="item-title">Pizza Margherita</h3>
+                <p class="item-price">₹249</p>
+                <button class="btn" onclick="addToCart('Pizza Margherita', 249)">Add to Cart</button>
+            </div>
+        </div>
+
+        <!-- Item 2 -->
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=500&q=80" alt="Burger" class="item-img">
+            <div class="item-info">
+                <h3 class="item-title">Regular Burger</h3>
+                <p class="item-price">₹129</p>
+                <button class="btn" onclick="addToCart('Regular Burger', 129)">Add to Cart</button>
+            </div>
+        </div>
+
+        <!-- Item 3 -->
+        <div class="menu-item">
+            <img src="https://images.unsplash.com/photo-1573080496219-bb080dd4f877?auto=format&fit=crop&w=500&q=80" alt="Fries" class="item-img">
+            <div class="item-info">
+                <h3 class="item-title">Regular Fries</h3>
+                <p class="item-price">₹89</p>
+                <button class="btn" onclick="addToCart('Regular Fries', 89)">Add to Cart</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h2>Your Order</h2>
+            <span class="close-cart" onclick="toggleCart()">✕</span>
+        </div>
+
+        <div class="cart-items" id="cartItems">
+            <p style="text-align: center; color: #888;">Your cart is empty.</p>
+        </div>
+
+        <!-- Required Dropdown to Select Table Number -->
+        <div class="table-section">
+            <label for="tableNum">🪑 Select Table Number <span style="color:red;">*</span>:</label>
+            <select id="tableNum" class="table-select" onchange="validateCheckoutRequirements()">
+                <option value="">--- Choose Table ---</option>
+                <option value="Table 1">Table 1</option>
+                <option value="Table 2">Table 2</option>
+                <option value="Table 3">Table 3</option>
+                <option value="Table 4">Table 4</option>
+                <option value="Table 5">Table 5</option>
+                <option value="Table 6">Table 6</option>
+                <option value="Table 7">Table 7</option>
+                <option value="Table 8">Table 8</option>
+            </select>
+        </div>
+
+        <div class="location-section">
+            <h4>Delivery Location <span style="color:red;">*</span></h4>
+            <button class="btn location-btn" onclick="getLocation()">📍 Fetch My Live Location</button>
+            <span id="locationStatus">⚠️ Location verification required</span>
+        </div>
+
+        <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+            <h3>Total: ₹<span id="cart-total">0</span></h3>
+        </div>
+
+        <div id="validationMessage">Select table & fetch location to unlock</div>
+
+        <button class="btn sms-btn" id="checkoutBtn" onclick="processOrder()" disabled>Locked 🔒</button>
+    </div>
+
+    <!-- Instructions & Confirmation ID Modal Container -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-box">
+            <h2>📢 Counter Confirmation Required</h2>
+            <p>Your order is ready! Please remember this easy **4-digit code**:</p>
+            <div class="id-badge" id="modalIDDisplay">#NH-0000</div>
+            <p style="font-weight: 600; color: var(--primary);">⚠️ Tell this code at the counter to confirm your order and start food preparation.</p>
+            <button class="btn modal-close-btn" onclick="executeSMSRedirect()">Proceed to Send SMS ✉️</button>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let userLocationLink = "";
+        let finalSMSUrl = ""; 
+        const mobileNumber = "9353427990"; 
+
+        function toggleCart() {
+            document.getElementById('cartSidebar').classList.toggle('active');
+        }
+
+        function addToCart(name, price) {
+            const existingItem = cart.find(item => item.name === name);
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ name, price, quantity: 1 });
+            }
+            updateCartUI();
+            document.getElementById('cartSidebar').classList.add('active');
+        }
+
+        function decreaseQuantity(name) {
+            const existingItem = cart.find(item => item.name === name);
+            if (existingItem) {
+                if (existingItem.quantity > 1) {
+                    existingItem.quantity -= 1;
+                } else {
+                    cart = cart.filter(item => item.name !== name);
+                }
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartItemsContainer = document.getElementById('cartItems');
+            const cartCount = document.getElementById('cart-count');
+            const cartTotal = document.getElementById('cart-total');
+            
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p style="text-align: center; color: #888;">Your cart is empty.</p>';
+                cartCount.innerText = '0';
+                cartTotal.innerText = '0';
+                validateCheckoutRequirements();
+                return;
+            }
+
+            cartItemsContainer.innerHTML = '';
+            let total = 0;
+            let count = 0;
+
+            cart.forEach(item => {
+                total += item.price * item.quantity;
+                count += item.quantity;
+
+                const itemEl = document.createElement('div');
+                itemEl.classList.add('cart-item');
+                itemEl.innerHTML = `
+                    <div class="cart-item-details">
+                        <h4>${item.name}</h4>
+                        <small>₹${item.price} each</small>
+                    </div>
+                    <div class="qty-controls">
+                        <button class="qty-btn" onclick="decreaseQuantity('${item.name}')">-</button>
+                        <span class="qty-val">${item.quantity}</span>
+                        <button class="qty-btn" onclick="addToCart('${item.name}', ${item.price})">+</button>
+                    </div>
+                    <div class="cart-item-price">
+                        ₹${item.price * item.quantity}
+                    </div>
+                `;
+                cartItemsContainer.appendChild(itemEl);
+            });
+
+            cartCount.innerText = count;
+            cartTotal.innerText = total;
+            validateCheckoutRequirements();
+        }
+
+        function getLocation() {
+            const status = document.getElementById('locationStatus');
+
+            if (!navigator.geolocation) {
+                status.innerText = "Geolocation not supported by your browser";
+                status.style.color = "red";
+            } else {
+                status.innerText = "Locating...";
+                status.style.color = "black";
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const latitude = position.coords.latitude;
+                        const longitude = position.coords.longitude;
+                        userLocationLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
+                        
+                        status.innerText = "✅ Location Secured!";
+                        status.style.color = "green";
+                        
+                        validateCheckoutRequirements();
+                    },
+                    () => {
+                        status.innerText = "❌ Location access denied. Please enable permissions.";
+                        status.style.color = "red";
+                        userLocationLink = "";
+                        validateCheckoutRequirements();
+                    }
+                );
+            }
+        }
+
+        // Global function to evaluate constraints dynamically
+        function validateCheckoutRequirements() {
+            const tableValue = document.getElementById('tableNum').value;
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const validationMsg = document.getElementById('validationMessage');
+
+            if (cart.length === 0) {
+                checkoutBtn.setAttribute('disabled', 'true');
+                checkoutBtn.classList.remove('enabled');
+                checkoutBtn.innerText = "Locked 🔒";
+                validationMsg.innerText = "Add items to your cart first";
+                validationMsg.style.color = "#d63031";
+                return;
+            }
+
+            if (!tableValue && !userLocationLink) {
+                validationMsg.innerText = "Select table & fetch location to unlock";
+                validationMsg.style.color = "#d63031";
+            } else if (!tableValue) {
+                validationMsg.innerText = "⚠️ Please select your table number";
+                validationMsg.style.color = "#ffa502";
+            } else if (!userLocationLink) {
+                validationMsg.innerText = "⚠️ Please fetch your live location";
+                validationMsg.style.color = "#ffa502";
+            }
+
+            if (tableValue && userLocationLink) {
+                // Clear validation roadblocks
+                checkoutBtn.removeAttribute('disabled');
+                checkoutBtn.classList.add('enabled');
+                checkoutBtn.innerText = "Order via Normal SMS ✉️";
+                validationMsg.innerText = "✅ Verification complete!";
+                validationMsg.style.color = "#16a34a";
+            } else {
+                // Keep checkout blocked
+                checkoutBtn.setAttribute('disabled', 'true');
+                checkoutBtn.classList.remove('enabled');
+                checkoutBtn.innerText = "Locked 🔒";
+            }
+        }
+
+        function generateShortID() {
+            return Math.floor(1000 + Math.random() * 9000);
+        }
+
+        function processOrder() {
+            const selectedTable = document.getElementById('tableNum').value;
+            
+            // Double-check safeguards
+            if (!userLocationLink || !selectedTable || cart.length === 0) {
+                alert("Please make sure your cart is not empty, table is selected, and location is secured!");
+                return;
+            }
+
+            const simpleID = `NH-${generateShortID()}`;
+
+            let message = `Order ID: #${simpleID}\n`;
+            message += `Brand: pizzburgfriez\n`;
+            message += `Table: ${selectedTable}\n\n`;
+            let total = 0;
+
+            cart.forEach(item => {
+                message += `- ${item.name} x ${item.quantity} (₹${item.price * item.quantity})\n`;
+                total += item.price * item.quantity;
+            });
+
+            message += `\nTotal: ₹${total}\n\n`;
+            message += `Location: ${userLocationLink}`;
+
+            const encodedMessage = encodeURIComponent(message);
+            finalSMSUrl = `sms:${mobileNumber}?body=${encodedMessage}`;
+
+            document.getElementById('modalIDDisplay').innerText = `#${simpleID}`;
+            document.getElementById('confirmModal').classList.add('active');
+        }
+
+        function executeSMSRedirect() {
+            document.getElementById('confirmModal').classList.remove('active');
+            if(finalSMSUrl) {
+                window.location.href = finalSMSUrl;
+            }
+        }
+    </script>
+</body>
+</html>
