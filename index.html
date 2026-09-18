@@ -2,191 +2,216 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Webcam Recorder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Mobile Cam Recorder</title>
   <style>
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
       background: #0f172a;
       color: #f8fafc;
+      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 2rem 1rem;
+      padding: env(safe-area-inset-top, 1rem) env(safe-area-inset-right, 1rem) calc(env(safe-area-inset-bottom, 1rem) + 80px) env(safe-area-inset-left, 1rem);
+    }
+
+    header {
+      text-align: center;
+      padding: 0.75rem 0;
     }
 
     h1 {
-      font-size: 1.75rem;
-      margin-bottom: 1.5rem;
-      font-weight: 600;
+      font-size: 1.25rem;
+      font-weight: 700;
     }
 
-    .container {
+    .main-content {
       width: 100%;
-      max-width: 860px;
+      max-width: 500px;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .video-grid {
-      display: grid;
-      grid-template-columns: 1fr;
       gap: 1rem;
-    }
-
-    @media (min-width: 768px) {
-      .video-grid {
-        grid-template-columns: 1fr 1fr;
-      }
+      flex: 1;
     }
 
     .video-card {
       background: #1e293b;
-      border-radius: 12px;
-      padding: 1rem;
+      border-radius: 16px;
+      padding: 0.75rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+      gap: 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     }
 
-    .video-card h2 {
-      font-size: 1rem;
-      margin-bottom: 0.75rem;
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 0.25rem;
+    }
+
+    .card-header span {
+      font-size: 0.8rem;
       color: #94a3b8;
       text-transform: uppercase;
+      font-weight: 600;
       letter-spacing: 0.05em;
+    }
+
+    .flip-btn {
+      background: #334155;
+      color: #cbd5e1;
+      border: none;
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
     }
 
     video {
       width: 100%;
-      aspect-ratio: 16 / 9;
+      aspect-ratio: 4 / 3;
       background: #020617;
-      border-radius: 8px;
+      border-radius: 12px;
       object-fit: cover;
     }
 
-    /* Flip preview mirror-style */
-    #liveFeed {
+    /* Mirrored only when using front/selfie camera */
+    .mirrored {
       transform: scaleX(-1);
     }
 
-    .controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 0.75rem;
-      background: #1e293b;
-      padding: 1rem;
-      border-radius: 12px;
-    }
-
-    button {
-      padding: 0.65rem 1.25rem;
-      border-radius: 8px;
-      border: none;
-      font-weight: 600;
-      font-size: 0.95rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    .btn-start {
-      background: #2563eb;
-      color: #fff;
-    }
-    .btn-start:hover:not(:disabled) {
-      background: #1d4ed8;
-    }
-
-    .btn-record {
-      background: #ef4444;
-      color: #fff;
-    }
-    .btn-record:hover:not(:disabled) {
-      background: #dc2626;
-    }
-
-    .btn-stop {
-      background: #475569;
-      color: #fff;
-    }
-    .btn-stop:hover:not(:disabled) {
-      background: #334155;
-    }
-
-    .btn-download {
-      background: #10b981;
-      color: #fff;
-    }
-    .btn-download:hover:not(:disabled) {
-      background: #059669;
-    }
-
-    .status {
-      font-size: 0.9rem;
+    .status-bar {
+      font-size: 0.85rem;
       color: #94a3b8;
       text-align: center;
-      min-height: 1.2rem;
+      padding: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
     }
 
-    .recording-indicator {
-      display: inline-block;
-      width: 10px;
-      height: 10px;
+    .recording-dot {
+      width: 8px;
+      height: 8px;
       background: #ef4444;
       border-radius: 50%;
       animation: pulse 1s infinite;
-      margin-right: 6px;
     }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
     }
+
+    /* Fixed thumb-accessible bottom action bar */
+    .action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 0.75rem 1rem calc(env(safe-area-inset-bottom, 0.75rem) + 0.25rem);
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.6rem;
+      max-width: 500px;
+      margin: 0 auto;
+      border-top: 1px solid #334155;
+      z-index: 100;
+    }
+
+    button.btn {
+      touch-action: manipulation;
+      min-height: 48px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+
+    button.btn:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    button.btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-camera {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .btn-record {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-stop {
+      background: #475569;
+      color: #fff;
+    }
+
+    .btn-save {
+      background: #10b981;
+      color: #fff;
+      grid-column: span 2;
+    }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <h1>Webcam Stream & Recorder</h1>
+  <header>
+    <h1>Mobile Cam & Recorder</h1>
+  </header>
 
-    <div class="video-grid">
-      <div class="video-card">
-        <h2>Live Preview</h2>
-        <video id="liveFeed" autoplay playsinline muted></video>
+  <div class="main-content">
+    <div class="video-card">
+      <div class="card-header">
+        <span>Live Preview</span>
+        <button id="flipBtn" class="flip-btn" style="display: none;">🔄 Flip</button>
       </div>
-
-      <div class="video-card">
-        <h2>Recorded Video</h2>
-        <video id="recordedPlayback" controls></video>
-      </div>
+      <video id="liveFeed" autoplay playsinline webkit-playsinline muted class="mirrored"></video>
     </div>
 
-    <div class="controls">
-      <button id="cameraBtn" class="btn-start">Enable Camera</button>
-      <button id="recordBtn" class="btn-record" disabled>Start Recording</button>
-      <button id="stopBtn" class="btn-stop" disabled>Stop Recording</button>
-      <button id="downloadBtn" class="btn-download" disabled>Download</button>
+    <div class="video-card">
+      <div class="card-header">
+        <span>Recorded Clip</span>
+      </div>
+      <video id="recordedPlayback" playsinline webkit-playsinline controls></video>
     </div>
 
-    <div id="statusText" class="status">Camera is off. Click "Enable Camera" to begin.</div>
+    <div id="statusText" class="status-bar">Tap "Enable Camera" below</div>
+  </div>
+
+  <div class="action-bar">
+    <button id="cameraBtn" class="btn btn-camera">Enable Camera</button>
+    <button id="recordBtn" class="btn btn-record" disabled>Record</button>
+    <button id="stopBtn" class="btn btn-stop" disabled>Stop</button>
+    <button id="downloadBtn" class="btn btn-save" disabled>Save Recording</button>
   </div>
 
   <script>
@@ -196,63 +221,122 @@
     const recordBtn = document.getElementById('recordBtn');
     const stopBtn = document.getElementById('stopBtn');
     const downloadBtn = document.getElementById('downloadBtn');
+    const flipBtn = document.getElementById('flipBtn');
     const statusText = document.getElementById('statusText');
 
     let stream = null;
     let mediaRecorder = null;
     let recordedChunks = [];
-    let recordedBlob = null;
+    let currentFacingMode = 'user';
+    let chosenMimeType = '';
 
-    // 1. Enable Camera & Mic
+    function getSupportedMimeType() {
+      const candidateTypes = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm',
+        'video/mp4;codecs=avc1,mp4a.40.2',
+        'video/mp4'
+      ];
+      return candidateTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+    }
+
+    async function startStream(facingMode) {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: {
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
+        audio: true
+      };
+
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      liveFeed.srcObject = stream;
+      
+      // Mirror front camera, unmirror back camera
+      if (facingMode === 'user') {
+        liveFeed.classList.add('mirrored');
+      } else {
+        liveFeed.classList.remove('mirrored');
+      }
+    }
+
+    // 1. Enable Camera
     cameraBtn.addEventListener('click', async () => {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: true
-        });
-
-        liveFeed.srcObject = stream;
+        await startStream(currentFacingMode);
         cameraBtn.disabled = true;
         recordBtn.disabled = false;
-        statusText.textContent = 'Camera active. Ready to record.';
+        flipBtn.style.display = 'inline-flex';
+        statusText.textContent = 'Ready to record';
       } catch (err) {
-        console.error('Camera access error:', err);
-        statusText.textContent = `Error: ${err.message || 'Could not access camera/microphone.'}`;
+        statusText.textContent = 'Camera permission denied or unavailable';
+      }
+    });
+
+    // Flip Camera (Front / Rear)
+    flipBtn.addEventListener('click', async () => {
+      currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+      flipBtn.disabled = true;
+      try {
+        await startStream(currentFacingMode);
+      } catch (err) {
+        statusText.textContent = 'Could not toggle camera';
+      } finally {
+        flipBtn.disabled = false;
       }
     });
 
     // 2. Start Recording
     recordBtn.addEventListener('click', () => {
       recordedChunks = [];
+      chosenMimeType = getSupportedMimeType();
 
-      // Determine supported MIME type
-      const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9,opus')
-        ? 'video/webm; codecs=vp9,opus'
-        : 'video/webm';
-
-      mediaRecorder = new MediaRecorder(stream, { mimeType });
+      try {
+        mediaRecorder = new MediaRecorder(stream, chosenMimeType ? { mimeType: chosenMimeType } : undefined);
+      } catch (err) {
+        mediaRecorder = new MediaRecorder(stream);
+      }
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) {
-          recordedChunks.push(e.data);
-        }
+        if (e.data && e.data.size > 0) recordedChunks.push(e.data);
       };
 
       mediaRecorder.onstop = () => {
-        recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
-        const videoUrl = URL.createObjectURL(recordedBlob);
+        const fileExt = chosenMimeType.includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(recordedChunks, { type: chosenMimeType || 'video/webm' });
+        const videoUrl = URL.createObjectURL(blob);
+
         recordedPlayback.src = videoUrl;
         downloadBtn.disabled = false;
         recordBtn.disabled = false;
         stopBtn.disabled = true;
-        statusText.innerHTML = 'Recording finished. Ready for preview or download.';
+        flipBtn.disabled = false;
+        statusText.textContent = 'Ready to preview or save';
+
+        // Setup save action
+        downloadBtn.onclick = () => {
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = videoUrl;
+          a.download = `mobile-recording-${Date.now()}.${fileExt}`;
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => document.body.removeChild(a), 100);
+        };
       };
 
-      mediaRecorder.start();
+      mediaRecorder.start(500); // Record in small chunks for stability
       recordBtn.disabled = true;
       stopBtn.disabled = false;
       downloadBtn.disabled = true;
-      statusText.innerHTML = '<span class="recording-indicator"></span> Recording in progress...';
+      flipBtn.disabled = true;
+      statusText.innerHTML = '<span class="recording-dot"></span> Recording...';
     });
 
     // 3. Stop Recording
@@ -260,22 +344,6 @@
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
       }
-    });
-
-    // 4. Download Saved File
-    downloadBtn.addEventListener('click', () => {
-      if (!recordedBlob) return;
-      const url = URL.createObjectURL(recordedBlob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = `recording-${Date.now()}.webm`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(() => {
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      }, 100);
     });
   </script>
 </body>
