@@ -3,414 +3,279 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Real-Time Microsecond Text Sync</title>
+  <title>Webcam Recorder</title>
   <style>
-    :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --accent-text: #ffffff;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --panel-bg: #ffffff;
-      --secondary-bg: #f1f5f9;
-      --secondary-text: #334155;
-      --secondary-hover: #e2e8f0;
-      --pulse: #10b981;
-      --danger: #ef4444;
-      --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-    }
-
-    body.dark-theme {
-      --bg: #0f172a;
-      --card-bg: #1e293b;
-      --accent: #38bdf8;
-      --accent-hover: #0284c7;
-      --accent-text: #0f172a;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --border: #334155;
-      --panel-bg: #0b1120;
-      --secondary-bg: #334155;
-      --secondary-text: #f8fafc;
-      --secondary-hover: #475569;
-      --pulse: #34d399;
-      --danger: #f87171;
-      --card-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
+      background: #0f172a;
+      color: #f8fafc;
       display: flex;
-      justify-content: center;
-      padding: 1.5rem 1rem;
+      flex-direction: column;
+      align-items: center;
       min-height: 100vh;
-      transition: background-color 0.2s ease, color 0.2s ease;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
     }
 
     .container {
       width: 100%;
-      max-width: 1200px;
-      background: var(--card-bg);
-      padding: 1.5rem 2rem;
-      border-radius: 12px;
-      box-shadow: var(--card-shadow);
-      border: 1px solid var(--border);
+      max-width: 860px;
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
-    }
-
-    .header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 0.75rem;
-      border-bottom: 1px solid var(--border);
-      flex-wrap: wrap;
-      gap: 0.75rem;
-    }
-
-    .title-group {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      flex-wrap: wrap;
-    }
-
-    h1 {
-      font-size: 1.35rem;
-      color: var(--accent);
-    }
-
-    .sync-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.75rem;
-      padding: 0.25rem 0.6rem;
-      border-radius: 9999px;
-      background: rgba(16, 185, 129, 0.12);
-      color: var(--pulse);
-      font-weight: 600;
-    }
-
-    .pulse-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--pulse);
-      animation: pulse 1.5s infinite ease-in-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.3; transform: scale(0.85); }
-    }
-
-    .split-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 1.5rem;
-      align-items: stretch;
     }
 
-    @media (max-width: 768px) {
-      .split-layout {
-        grid-template-columns: 1fr;
+    .video-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .video-grid {
+        grid-template-columns: 1fr 1fr;
       }
     }
 
-    .panel {
+    .video-card {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 1rem;
-      background: var(--card-bg);
-    }
-
-    .panel-header {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      min-height: 32px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
     }
 
-    .panel-header h2 {
+    .video-card h2 {
       font-size: 1rem;
+      margin-bottom: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #020617;
+      border-radius: 8px;
+      object-fit: cover;
+    }
+
+    /* Flip preview mirror-style */
+    #liveFeed {
+      transform: scaleX(-1);
+    }
+
+    .controls {
       display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      background: #1e293b;
+      padding: 1rem;
+      border-radius: 12px;
     }
 
     button {
-      background: var(--secondary-bg);
-      color: var(--secondary-text);
-      border: 1px solid var(--border);
-      padding: 0.45rem 0.8rem;
-      font-size: 0.82rem;
+      padding: 0.65rem 1.25rem;
+      border-radius: 8px;
+      border: none;
       font-weight: 600;
-      border-radius: 6px;
+      font-size: 0.95rem;
       cursor: pointer;
+      transition: all 0.2s ease;
       display: inline-flex;
       align-items: center;
-      gap: 0.35rem;
-      transition: background 0.15s ease;
-      user-select: none;
-    }
-
-    button:hover {
-      background: var(--secondary-hover);
-    }
-
-    textarea {
-      width: 100%;
-      height: 400px;
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.85rem;
-      color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 0.9rem;
-      line-height: 1.5;
-      resize: vertical;
-      outline: none;
-      transition: border-color 0.15s ease;
-    }
-
-    textarea:focus {
-      border-color: var(--accent);
-    }
-
-    textarea:read-only {
-      cursor: default;
-      opacity: 0.92;
-    }
-
-    .meta-bar {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      font-family: ui-monospace, monospace;
-    }
-
-    .footer-status {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--border);
-      font-family: ui-monospace, monospace;
-      flex-wrap: wrap;
       gap: 0.5rem;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-start {
+      background: #2563eb;
+      color: #fff;
+    }
+    .btn-start:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    .btn-record {
+      background: #ef4444;
+      color: #fff;
+    }
+    .btn-record:hover:not(:disabled) {
+      background: #dc2626;
+    }
+
+    .btn-stop {
+      background: #475569;
+      color: #fff;
+    }
+    .btn-stop:hover:not(:disabled) {
+      background: #334155;
+    }
+
+    .btn-download {
+      background: #10b981;
+      color: #fff;
+    }
+    .btn-download:hover:not(:disabled) {
+      background: #059669;
+    }
+
+    .status {
+      font-size: 0.9rem;
+      color: #94a3b8;
+      text-align: center;
+      min-height: 1.2rem;
+    }
+
+    .recording-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 1s infinite;
+      margin-right: 6px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
     }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="header-row">
-      <div class="title-group">
-        <h1>Text Data Manager</h1>
-        <div class="sync-badge">
-          <span class="pulse-dot"></span>
-          <span>Live Sync</span>
-        </div>
+    <h1>Webcam Stream & Recorder</h1>
+
+    <div class="video-grid">
+      <div class="video-card">
+        <h2>Live Preview</h2>
+        <video id="liveFeed" autoplay playsinline muted></video>
       </div>
 
-      <button id="themeToggleBtn" type="button" aria-label="Toggle dark/light theme">
-        🌙 Dark Mode
-      </button>
+      <div class="video-card">
+        <h2>Recorded Video</h2>
+        <video id="recordedPlayback" controls></video>
+      </div>
     </div>
 
-    <div class="split-layout">
-      <!-- LEFT: WRITE & AUTOSAVE -->
-      <section class="panel" aria-labelledby="writeHeading">
-        <div class="panel-header">
-          <h2 id="writeHeading">✍️ Write & Autosave (Left)</h2>
-        </div>
-
-        <textarea id="writeEditor" placeholder="Type text here... changes and deletions sync in microseconds."></textarea>
-
-        <div class="meta-bar">
-          <span id="writeCharCount">0 chars | 0 words</span>
-          <span id="saveMicroTime">Autosave: Idle</span>
-        </div>
-      </section>
-
-      <!-- RIGHT: AUTOLOAD & READ -->
-      <section class="panel" aria-labelledby="readHeading">
-        <div class="panel-header">
-          <h2 id="readHeading">📖 Auto-Load & Read (Right)</h2>
-        </div>
-
-        <textarea id="readViewer" readonly placeholder="Synchronized storage text will stream here..."></textarea>
-
-        <div class="meta-bar">
-          <span id="readCharCount">0 chars | 0 words</span>
-          <span id="loadMicroTime">Autoload: Ready</span>
-        </div>
-      </section>
+    <div class="controls">
+      <button id="cameraBtn" class="btn-start">Enable Camera</button>
+      <button id="recordBtn" class="btn-record" disabled>Start Recording</button>
+      <button id="stopBtn" class="btn-stop" disabled>Stop Recording</button>
+      <button id="downloadBtn" class="btn-download" disabled>Download</button>
     </div>
 
-    <!-- Live Performance & Timestamp Bar -->
-    <div class="footer-status">
-      <span id="statusMessage">Live sync operational</span>
-      <span id="syncLatencyInfo">Latency: 0 µs</span>
-    </div>
+    <div id="statusText" class="status">Camera is off. Click "Enable Camera" to begin.</div>
   </div>
 
   <script>
-    const writeEditor = document.getElementById('writeEditor');
-    const readViewer = document.getElementById('readViewer');
-    const writeCharCount = document.getElementById('writeCharCount');
-    const readCharCount = document.getElementById('readCharCount');
-    const saveMicroTime = document.getElementById('saveMicroTime');
-    const loadMicroTime = document.getElementById('loadMicroTime');
-    const statusMessage = document.getElementById('statusMessage');
-    const syncLatencyInfo = document.getElementById('syncLatencyInfo');
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const liveFeed = document.getElementById('liveFeed');
+    const recordedPlayback = document.getElementById('recordedPlayback');
+    const cameraBtn = document.getElementById('cameraBtn');
+    const recordBtn = document.getElementById('recordBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const statusText = document.getElementById('statusText');
 
-    const STORAGE_KEY = 'split_screen_text_data';
-    const THEME_KEY = 'split_screen_text_theme';
-    
-    const SYNC_BUFFER_MS = 25; // Debounce window for rapid typing/backspacing
-    let autoSyncTimer = null;
+    let stream = null;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let recordedBlob = null;
 
-    // Formats timestamp down to microseconds (µs)
-    function getMicroTime() {
-      const now = new Date();
-      const timeStr = now.toTimeString().split(' ')[0];
-      const pNow = performance.now();
-      const micros = Math.floor((pNow % 1000) * 1000).toString().padStart(6, '0');
-      return `${timeStr}.${micros} µs`;
-    }
-
-    function updateCounters(textarea, targetEl) {
-      const val = textarea.value;
-      const chars = val.length;
-      const words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
-      targetEl.textContent = `${chars} chars | ${words} words`;
-    }
-
-    // --- Autosave, Autoload, and Character Deletion Sync Pipeline ---
-    function executeAutoSync() {
-      const content = writeEditor.value;
-      const t0 = performance.now();
-
+    // 1. Enable Camera & Mic
+    cameraBtn.addEventListener('click', async () => {
       try {
-        // If user deleted all text via backspace, clear storage completely
-        if (content.trim() === '') {
-          localStorage.removeItem(STORAGE_KEY);
-          readViewer.value = '';
-          updateCounters(readViewer, readCharCount);
-          
-          const t1 = performance.now();
-          const elapsedUs = Math.round((t1 - t0) * 1000);
-          saveMicroTime.textContent = `Cleared @ ${getMicroTime()}`;
-          loadMicroTime.textContent = 'Storage cleared';
-          statusMessage.textContent = 'Data cleared';
-          syncLatencyInfo.textContent = `Latency: ${elapsedUs} µs`;
-          return;
-        }
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true
+        });
 
-        // 1. Save updated content to LocalStorage
-        localStorage.setItem(STORAGE_KEY, content);
-        const tSave = performance.now();
-        const saveElapsedUs = Math.round((tSave - t0) * 1000);
-        saveMicroTime.textContent = `Synced @ ${getMicroTime()} (${saveElapsedUs} µs)`;
-
-        // 2. Read back into the right panel
-        const loadedData = localStorage.getItem(STORAGE_KEY);
-        if (loadedData !== null) {
-          readViewer.value = loadedData;
-          updateCounters(readViewer, readCharCount);
-          const tLoad = performance.now();
-          const totalElapsedUs = Math.round((tLoad - t0) * 1000);
-          loadMicroTime.textContent = `Synced (${totalElapsedUs} µs)`;
-          statusMessage.textContent = `Live synced in ${totalElapsedUs} µs`;
-          syncLatencyInfo.textContent = `Latency: ${totalElapsedUs} µs`;
-        }
+        liveFeed.srcObject = stream;
+        cameraBtn.disabled = true;
+        recordBtn.disabled = false;
+        statusText.textContent = 'Camera active. Ready to record.';
       } catch (err) {
-        statusMessage.textContent = 'Storage error: Check privacy settings';
+        console.error('Camera access error:', err);
+        statusText.textContent = `Error: ${err.message || 'Could not access camera/microphone.'}`;
       }
-    }
-
-    // Listens to standard input (including character-level backspace/delete)
-    writeEditor.addEventListener('input', () => {
-      updateCounters(writeEditor, writeCharCount);
-      clearTimeout(autoSyncTimer);
-      autoSyncTimer = setTimeout(executeAutoSync, SYNC_BUFFER_MS);
     });
 
-    // Cross-tab auto-sync
-    window.addEventListener('storage', (e) => {
-      if (e.key === STORAGE_KEY) {
-        if (e.newValue && e.newValue.trim() !== '') {
-          readViewer.value = e.newValue;
-          writeEditor.value = e.newValue;
-          updateCounters(readViewer, readCharCount);
-          updateCounters(writeEditor, writeCharCount);
-          loadMicroTime.textContent = `Tab sync @ ${getMicroTime()}`;
-        } else {
-          readViewer.value = '';
-          writeEditor.value = '';
-          updateCounters(readViewer, readCharCount);
-          updateCounters(writeEditor, writeCharCount);
-          loadMicroTime.textContent = `Tab cleared @ ${getMicroTime()}`;
+    // 2. Start Recording
+    recordBtn.addEventListener('click', () => {
+      recordedChunks = [];
+
+      // Determine supported MIME type
+      const mimeType = MediaRecorder.isTypeSupported('video/webm; codecs=vp9,opus')
+        ? 'video/webm; codecs=vp9,opus'
+        : 'video/webm';
+
+      mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunks.push(e.data);
         }
+      };
+
+      mediaRecorder.onstop = () => {
+        recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        const videoUrl = URL.createObjectURL(recordedBlob);
+        recordedPlayback.src = videoUrl;
+        downloadBtn.disabled = false;
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusText.innerHTML = 'Recording finished. Ready for preview or download.';
+      };
+
+      mediaRecorder.start();
+      recordBtn.disabled = true;
+      stopBtn.disabled = false;
+      downloadBtn.disabled = true;
+      statusText.innerHTML = '<span class="recording-indicator"></span> Recording in progress...';
+    });
+
+    // 3. Stop Recording
+    stopBtn.addEventListener('click', () => {
+      if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
       }
     });
 
-    // Theme Handling
-    function applyTheme(isDark) {
-      if (isDark) {
-        document.body.classList.add('dark-theme');
-        themeToggleBtn.textContent = '☀️ Light Mode';
-      } else {
-        document.body.classList.remove('dark-theme');
-        themeToggleBtn.textContent = '🌙 Dark Mode';
-      }
-    }
-
-    themeToggleBtn.addEventListener('click', () => {
-      const isDark = document.body.classList.toggle('dark-theme');
-      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
-      applyTheme(isDark);
-    });
-
-    // Initial Load
-    window.addEventListener('DOMContentLoaded', () => {
-      try {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        applyTheme(savedTheme === 'dark');
-
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved && saved.trim() !== '') {
-          writeEditor.value = saved;
-          readViewer.value = saved;
-          updateCounters(writeEditor, writeCharCount);
-          updateCounters(readViewer, readCharCount);
-          saveMicroTime.textContent = `Loaded cache @ ${getMicroTime()}`;
-          loadMicroTime.textContent = 'Synced from storage';
-        }
-      } catch (err) {}
+    // 4. Download Saved File
+    downloadBtn.addEventListener('click', () => {
+      if (!recordedBlob) return;
+      const url = URL.createObjectURL(recordedBlob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `recording-${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
     });
   </script>
 </body>
