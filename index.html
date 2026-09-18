@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Mobile Cam Recorder</title>
+  <title>Mobile Cam & BG Color Changer</title>
+  
+  <!-- MediaPipe Selfie Segmentation & Camera Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js" crossorigin="anonymous"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -20,33 +25,33 @@
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: env(safe-area-inset-top, 1rem) env(safe-area-inset-right, 1rem) calc(env(safe-area-inset-bottom, 1rem) + 80px) env(safe-area-inset-left, 1rem);
+      padding: env(safe-area-inset-top, 0.75rem) 0.75rem calc(env(safe-area-inset-bottom, 0.75rem) + 85px) 0.75rem;
     }
 
     header {
       text-align: center;
-      padding: 0.75rem 0;
+      padding: 0.5rem 0;
     }
 
     h1 {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
     }
 
     .main-content {
       width: 100%;
-      max-width: 500px;
+      max-width: 480px;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.75rem;
       flex: 1;
     }
 
     .video-card {
       background: #1e293b;
-      border-radius: 16px;
-      padding: 0.75rem;
+      border-radius: 14px;
+      padding: 0.65rem;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
@@ -57,52 +62,108 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 0.25rem;
+      padding: 0 0.2rem;
     }
 
     .card-header span {
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       color: #94a3b8;
       text-transform: uppercase;
       font-weight: 600;
       letter-spacing: 0.05em;
     }
 
-    .flip-btn {
-      background: #334155;
-      color: #cbd5e1;
-      border: none;
-      border-radius: 6px;
-      padding: 0.3rem 0.6rem;
-      font-size: 0.75rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-    }
-
-    video {
+    /* Processed live output canvas */
+    canvas#outputCanvas {
       width: 100%;
       aspect-ratio: 4 / 3;
       background: #020617;
-      border-radius: 12px;
+      border-radius: 10px;
       object-fit: cover;
     }
 
-    /* Mirrored only when using front/selfie camera */
-    .mirrored {
-      transform: scaleX(-1);
+    video#recordedPlayback {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: #020617;
+      border-radius: 10px;
+      object-fit: cover;
+    }
+
+    /* Hidden raw camera element */
+    #rawVideo {
+      display: none;
+    }
+
+    /* Color Selection Bar */
+    .bg-controls {
+      background: #1e293b;
+      border-radius: 14px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .bg-controls-title {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .palette {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .swatch {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .swatch.active {
+      border-color: #38bdf8;
+      transform: scale(1.15);
+    }
+
+    .custom-color-wrapper {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 2px dashed #475569;
+    }
+
+    .custom-color-wrapper input[type="color"] {
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      cursor: pointer;
+      border: none;
     }
 
     .status-bar {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #94a3b8;
       text-align: center;
-      padding: 0.5rem;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.4rem;
+      gap: 0.35rem;
+      min-height: 1.5rem;
     }
 
     .recording-dot {
@@ -124,14 +185,14 @@
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 0.75rem 1rem calc(env(safe-area-inset-bottom, 0.75rem) + 0.25rem);
+      padding: 0.6rem 0.75rem calc(env(safe-area-inset-bottom, 0.6rem) + 0.2rem);
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.6rem;
-      max-width: 500px;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      max-width: 480px;
       margin: 0 auto;
       border-top: 1px solid #334155;
       z-index: 100;
@@ -139,11 +200,11 @@
 
     button.btn {
       touch-action: manipulation;
-      min-height: 48px;
+      min-height: 46px;
       border-radius: 10px;
       border: none;
       font-weight: 600;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -160,53 +221,59 @@
       cursor: not-allowed;
     }
 
-    .btn-camera {
-      background: #2563eb;
-      color: #fff;
-    }
-
-    .btn-record {
-      background: #ef4444;
-      color: #fff;
-    }
-
-    .btn-stop {
-      background: #475569;
-      color: #fff;
-    }
-
-    .btn-save {
-      background: #10b981;
-      color: #fff;
-      grid-column: span 2;
-    }
+    .btn-camera { background: #2563eb; color: #fff; }
+    .btn-record { background: #ef4444; color: #fff; }
+    .btn-stop { background: #475569; color: #fff; }
+    .btn-save { background: #10b981; color: #fff; grid-column: span 2; }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>Mobile Cam & Recorder</h1>
+    <h1>AI Background Changer & Recorder</h1>
   </header>
 
+  <!-- Raw hidden video element for MediaPipe input -->
+  <video id="rawVideo" playsinline webkit-playsinline muted></video>
+
   <div class="main-content">
+    <!-- Live Canvas (Output) -->
     <div class="video-card">
       <div class="card-header">
-        <span>Live Preview</span>
-        <button id="flipBtn" class="flip-btn" style="display: none;">🔄 Flip</button>
+        <span>Processed Live Preview</span>
       </div>
-      <video id="liveFeed" autoplay playsinline webkit-playsinline muted class="mirrored"></video>
+      <canvas id="outputCanvas" width="640" height="480"></canvas>
     </div>
 
+    <!-- Background Color Chooser -->
+    <div class="bg-controls">
+      <div class="bg-controls-title">Pick Background Color</div>
+      <div class="palette">
+        <!-- 'original' restores raw camera stream without solid color replacement -->
+        <button class="swatch active" data-color="original" style="background: linear-gradient(135deg, #475569 50%, #1e293b 50%);" title="Original"></button>
+        <button class="swatch" data-color="#00FF00" style="background: #00FF00;" title="Green Screen"></button>
+        <button class="swatch" data-color="#0066FF" style="background: #0066FF;" title="Blue Screen"></button>
+        <button class="swatch" data-color="#111827" style="background: #111827;" title="Matte Black"></button>
+        <button class="swatch" data-color="#F3F4F6" style="background: #F3F4F6;" title="Clean White"></button>
+        <button class="swatch" data-color="#7C3AED" style="background: #7C3AED;" title="Studio Purple"></button>
+        <div class="custom-color-wrapper" title="Pick Custom Color">
+          <input type="color" id="customColorPicker" value="#FF5733">
+        </div>
+      </div>
+    </div>
+
+    <!-- Recorded Preview -->
     <div class="video-card">
       <div class="card-header">
-        <span>Recorded Clip</span>
+        <span>Recorded Video Preview</span>
       </div>
       <video id="recordedPlayback" playsinline webkit-playsinline controls></video>
     </div>
 
-    <div id="statusText" class="status-bar">Tap "Enable Camera" below</div>
+    <div id="statusText" class="status-bar">Tap "Enable Camera" to load AI segmentation</div>
   </div>
 
+  <!-- Bottom Thumb Actions -->
   <div class="action-bar">
     <button id="cameraBtn" class="btn btn-camera">Enable Camera</button>
     <button id="recordBtn" class="btn btn-record" disabled>Record</button>
@@ -215,21 +282,110 @@
   </div>
 
   <script>
-    const liveFeed = document.getElementById('liveFeed');
+    const rawVideo = document.getElementById('rawVideo');
+    const outputCanvas = document.getElementById('outputCanvas');
+    const ctx = outputCanvas.getContext('2d');
     const recordedPlayback = document.getElementById('recordedPlayback');
     const cameraBtn = document.getElementById('cameraBtn');
     const recordBtn = document.getElementById('recordBtn');
     const stopBtn = document.getElementById('stopBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const flipBtn = document.getElementById('flipBtn');
     const statusText = document.getElementById('statusText');
+    const customColorPicker = document.getElementById('customColorPicker');
+    const swatches = document.querySelectorAll('.swatch');
 
     let stream = null;
     let mediaRecorder = null;
     let recordedChunks = [];
-    let currentFacingMode = 'user';
+    let activeBgColor = 'original';
     let chosenMimeType = '';
 
+    // Color Swatch Selection
+    swatches.forEach(swatch => {
+      swatch.addEventListener('click', () => {
+        swatches.forEach(s => s.classList.remove('active'));
+        swatch.classList.add('active');
+        activeBgColor = swatch.getAttribute('data-color');
+      });
+    });
+
+    customColorPicker.addEventListener('input', (e) => {
+      swatches.forEach(s => s.classList.remove('active'));
+      activeBgColor = e.target.value;
+    });
+
+    // 1. Initialize MediaPipe SelfieSegmentation
+    const selfieSegmentation = new SelfieSegmentation({
+      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+    });
+
+    selfieSegmentation.setOptions({
+      modelSelection: 1 // 0: general, 1: landscape/selfie (optimized for real-time mobile inference)
+    });
+
+    // 2. Render Results onto Canvas
+    selfieSegmentation.onResults((results) => {
+      ctx.save();
+      ctx.clearRect(0, 0, outputCanvas.width, outputCanvas.height);
+
+      // Mirror horizontally for selfie orientation
+      ctx.translate(outputCanvas.width, 0);
+      ctx.scale(-1, 1);
+
+      if (activeBgColor === 'original') {
+        // Draw original video feed directly
+        ctx.drawImage(results.image, 0, 0, outputCanvas.width, outputCanvas.height);
+      } else {
+        // Draw segmentation mask
+        ctx.drawImage(results.segmentationMask, 0, 0, outputCanvas.width, outputCanvas.height);
+
+        // Keep only overlapping pixels with the video feed (the person)
+        ctx.globalCompositeOperation = 'source-in';
+        ctx.drawImage(results.image, 0, 0, outputCanvas.width, outputCanvas.height);
+
+        // Draw solid background underneath the person
+        ctx.globalCompositeOperation = 'destination-over';
+        ctx.fillStyle = activeBgColor;
+        ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+      }
+
+      ctx.restore();
+    });
+
+    // 3. Enable Camera & Camera Pipeline
+    cameraBtn.addEventListener('click', async () => {
+      try {
+        statusText.textContent = 'Starting camera & downloading AI model...';
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+          audio: true
+        });
+
+        rawVideo.srcObject = stream;
+        await rawVideo.play();
+
+        // Feed raw frames through MediaPipe
+        const cameraFeed = new Camera(rawVideo, {
+          onFrame: async () => {
+            await selfieSegmentation.send({ image: rawVideo });
+          },
+          width: 640,
+          height: 480
+        });
+
+        await cameraFeed.start();
+
+        cameraBtn.disabled = true;
+        recordBtn.disabled = false;
+        statusText.textContent = 'AI ready. Pick a background color.';
+      } catch (err) {
+        console.error(err);
+        statusText.textContent = 'Failed to load camera or AI model.';
+      }
+    });
+
+    // 4. Determine Safe Codec
     function getSupportedMimeType() {
       const candidateTypes = [
         'video/webm;codecs=vp9,opus',
@@ -241,66 +397,24 @@
       return candidateTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
     }
 
-    async function startStream(facingMode) {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-
-      const constraints = {
-        video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: true
-      };
-
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-      liveFeed.srcObject = stream;
-      
-      // Mirror front camera, unmirror back camera
-      if (facingMode === 'user') {
-        liveFeed.classList.add('mirrored');
-      } else {
-        liveFeed.classList.remove('mirrored');
-      }
-    }
-
-    // 1. Enable Camera
-    cameraBtn.addEventListener('click', async () => {
-      try {
-        await startStream(currentFacingMode);
-        cameraBtn.disabled = true;
-        recordBtn.disabled = false;
-        flipBtn.style.display = 'inline-flex';
-        statusText.textContent = 'Ready to record';
-      } catch (err) {
-        statusText.textContent = 'Camera permission denied or unavailable';
-      }
-    });
-
-    // Flip Camera (Front / Rear)
-    flipBtn.addEventListener('click', async () => {
-      currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
-      flipBtn.disabled = true;
-      try {
-        await startStream(currentFacingMode);
-      } catch (err) {
-        statusText.textContent = 'Could not toggle camera';
-      } finally {
-        flipBtn.disabled = false;
-      }
-    });
-
-    // 2. Start Recording
+    // 5. Start Recording (Canvas stream + Mic Audio)
     recordBtn.addEventListener('click', () => {
       recordedChunks = [];
       chosenMimeType = getSupportedMimeType();
 
+      // Capture processed stream directly from Canvas at 30 FPS
+      const canvasStream = outputCanvas.captureStream(30);
+
+      // Extract microphone audio track from the original webcam stream
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        canvasStream.addTrack(audioTrack);
+      }
+
       try {
-        mediaRecorder = new MediaRecorder(stream, chosenMimeType ? { mimeType: chosenMimeType } : undefined);
+        mediaRecorder = new MediaRecorder(canvasStream, chosenMimeType ? { mimeType: chosenMimeType } : undefined);
       } catch (err) {
-        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder = new MediaRecorder(canvasStream);
       }
 
       mediaRecorder.ondataavailable = (e) => {
@@ -316,30 +430,27 @@
         downloadBtn.disabled = false;
         recordBtn.disabled = false;
         stopBtn.disabled = true;
-        flipBtn.disabled = false;
-        statusText.textContent = 'Ready to preview or save';
+        statusText.textContent = 'Ready to preview or save.';
 
-        // Setup save action
         downloadBtn.onclick = () => {
           const a = document.createElement('a');
           a.style.display = 'none';
           a.href = videoUrl;
-          a.download = `mobile-recording-${Date.now()}.${fileExt}`;
+          a.download = `segmented-recording-${Date.now()}.${fileExt}`;
           document.body.appendChild(a);
           a.click();
           setTimeout(() => document.body.removeChild(a), 100);
         };
       };
 
-      mediaRecorder.start(500); // Record in small chunks for stability
+      mediaRecorder.start(500);
       recordBtn.disabled = true;
       stopBtn.disabled = false;
       downloadBtn.disabled = true;
-      flipBtn.disabled = true;
-      statusText.innerHTML = '<span class="recording-dot"></span> Recording...';
+      statusText.innerHTML = '<span class="recording-dot"></span> Recording with custom background...';
     });
 
-    // 3. Stop Recording
+    // 6. Stop Recording
     stopBtn.addEventListener('click', () => {
       if (mediaRecorder && mediaRecorder.state !== 'inactive') {
         mediaRecorder.stop();
