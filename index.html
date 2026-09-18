@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Browser Notepad</title>
+  <title>Cloud Notepad</title>
   <style>
     :root {
       --bg: #f8fafc;
       --panel: #ffffff;
       --text: #1e293b;
       --border: #e2e8f0;
-      --primary: #3b82f6;
+      --primary: #2563eb;
+      --success: #16a34a;
       --muted: #64748b;
     }
 
@@ -27,12 +28,21 @@
 
     header {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 20px;
+      padding: 10px 20px;
       background: var(--panel);
       border-bottom: 1px solid var(--border);
+    }
+
+    .title-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      min-width: 240px;
     }
 
     #doc-title {
@@ -43,9 +53,11 @@
       border-radius: 6px;
       outline: none;
       color: var(--text);
+      width: 100%;
+      max-width: 320px;
     }
 
-    #doc-title:hover, #doc-title:focus {
+    #doc-title:focus {
       border-color: var(--border);
       background: var(--bg);
     }
@@ -53,23 +65,45 @@
     .btn-group {
       display: flex;
       gap: 8px;
+      align-items: center;
     }
 
     button {
-      padding: 6px 14px;
-      font-size: 0.875rem;
+      padding: 6px 12px;
+      font-size: 0.85rem;
       border: 1px solid var(--border);
       background: var(--panel);
       color: var(--text);
       border-radius: 6px;
       cursor: pointer;
       font-weight: 500;
-      transition: background 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     button:hover { background: var(--bg); }
     button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
     button.primary:hover { opacity: 0.9; }
+
+    /* Configuration bar */
+    #config-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 20px;
+      background: #f1f5f9;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+
+    #config-bar input {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      width: 250px;
+    }
 
     main {
       flex: 1;
@@ -79,7 +113,7 @@
     #editor {
       width: 100%;
       height: 100%;
-      padding: 24px;
+      padding: 20px;
       border: none;
       outline: none;
       resize: none;
@@ -104,79 +138,167 @@
 <body>
 
   <header>
-    <input type="text" id="doc-title" value="Untitled Note" />
+    <div class="title-area">
+      <input type="text" id="doc-title" value="Untitled Note" />
+    </div>
+
     <div class="btn-group">
-      <button id="copy-btn">Copy</button>
-      <button id="clear-btn">Clear</button>
-      <button id="download-btn" class="primary">Download (.txt)</button>
+      <button id="cloud-save-btn" class="primary">☁️ Save Online</button>
+      <button id="copy-share-btn">🔗 Share Link</button>
+      <button id="download-btn">Download (.txt)</button>
     </div>
   </header>
 
+  <!-- Cloud API Settings -->
+  <div id="config-bar">
+    <label for="api-key"><strong>JSONBin Access Key:</strong></label>
+    <input type="password" id="api-key" placeholder="Paste Master Key ($2a$10$...)" />
+    <span style="color: var(--muted);">(Free key from jsonbin.io required for private cloud saves)</span>
+  </div>
+
   <main>
-    <textarea id="editor" placeholder="Start typing your notes..."></textarea>
+    <textarea id="editor" placeholder="Type here..."></textarea>
   </main>
 
   <footer>
     <div id="stats">Words: 0 | Characters: 0</div>
-    <div id="save-status">Saved</div>
+    <div id="status">Ready</div>
   </footer>
 
   <script>
     const editor = document.getElementById('editor');
     const titleInput = document.getElementById('doc-title');
     const stats = document.getElementById('stats');
-    const saveStatus = document.getElementById('save-status');
+    const statusText = document.getElementById('status');
+    const apiKeyInput = document.getElementById('api-key');
 
-    // Load saved content from localStorage
-    editor.value = localStorage.getItem('notepad_text') || '';
-    titleInput.value = localStorage.getItem('notepad_title') || 'Untitled Note';
+    // Check for note ID in URL query params
+    const urlParams = new URLSearchParams(window.location.search);
+    let binId = urlParams.get('id') || localStorage.getItem('active_bin_id');
 
+    // Restore API Key
+    apiKeyInput.value = localStorage.getItem('jsonbin_key') || '';
+    apiKeyInput.addEventListener('change', () => {
+      localStorage.setItem('jsonbin_key', apiKeyInput.value.trim());
+    });
+
+    // Local autosave fallback
     function updateStats() {
       const text = editor.value.trim();
       const words = text ? text.split(/\s+/).length : 0;
-      const chars = editor.value.length;
-      stats.textContent = `Words: ${words} | Characters: ${chars}`;
-    }
-
-    function save() {
-      localStorage.setItem('notepad_text', editor.value);
-      localStorage.setItem('notepad_title', titleInput.value);
-      saveStatus.textContent = 'Saved';
+      stats.textContent = `Words: ${words} | Characters: ${editor.value.length}`;
     }
 
     editor.addEventListener('input', () => {
-      saveStatus.textContent = 'Saving...';
       updateStats();
-      save();
+      localStorage.setItem('local_draft_text', editor.value);
+      localStorage.setItem('local_draft_title', titleInput.value);
     });
 
-    titleInput.addEventListener('input', save);
+    // Load Note from Cloud
+    async function loadFromCloud(id) {
+      const key = apiKeyInput.value.trim();
+      statusText.textContent = 'Fetching note from cloud...';
+
+      try {
+        const headers = key ? { 'X-Master-Key': key } : {};
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`, { headers });
+        if (!res.ok) throw new Error('Cloud note not found');
+
+        const data = await res.json();
+        editor.value = data.record.content || '';
+        titleInput.value = data.record.title || 'Untitled Note';
+        statusText.textContent = 'Loaded from cloud';
+        updateStats();
+      } catch (err) {
+        statusText.textContent = `Load failed: ${err.message}`;
+      }
+    }
+
+    // Save Note to Cloud (Create or Update)
+    async function saveToCloud() {
+      const key = apiKeyInput.value.trim();
+      if (!key) {
+        alert('Please enter your JSONBin Access Key in the bar above.\nSign up free at jsonbin.io to obtain your Master Key.');
+        return;
+      }
+
+      statusText.textContent = 'Saving to cloud...';
+      const payload = {
+        title: titleInput.value,
+        content: editor.value,
+        updatedAt: new Date().toISOString()
+      };
+
+      try {
+        let res;
+        if (binId) {
+          // Update existing bin
+          res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': key
+            },
+            body: JSON.stringify(payload)
+          });
+        } else {
+          // Create new bin
+          res = await fetch('https://api.jsonbin.io/v3/b', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': key,
+              'X-Bin-Private': 'true',
+              'X-Bin-Name': titleInput.value || 'Notepad Entry'
+            },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'Error saving');
+
+        if (!binId && data.metadata && data.metadata.id) {
+          binId = data.metadata.id;
+          localStorage.setItem('active_bin_id', binId);
+          const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?id=${binId}`;
+          window.history.replaceState({ path: newUrl }, '', newUrl);
+        }
+
+        statusText.textContent = 'Cloud synced successfully!';
+      } catch (err) {
+        statusText.textContent = `Cloud save failed: ${err.message}`;
+      }
+    }
+
+    document.getElementById('cloud-save-btn').addEventListener('click', saveToCloud);
+
+    document.getElementById('copy-share-btn').addEventListener('click', async () => {
+      if (!binId) {
+        alert('Please save the note online first to generate a cloud link.');
+        return;
+      }
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Note link copied to clipboard!');
+    });
 
     document.getElementById('download-btn').addEventListener('click', () => {
       const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${titleInput.value.trim() || 'Note'}.txt`;
-      link.click();
-      URL.revokeObjectURL(link.href);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${titleInput.value || 'note'}.txt`;
+      a.click();
     });
 
-    document.getElementById('copy-btn').addEventListener('click', async () => {
-      await navigator.clipboard.writeText(editor.value);
-      const originalText = document.getElementById('copy-btn').textContent;
-      document.getElementById('copy-btn').textContent = 'Copied!';
-      setTimeout(() => document.getElementById('copy-btn').textContent = originalText, 1500);
-    });
-
-    document.getElementById('clear-btn').addEventListener('click', () => {
-      if (confirm('Clear note contents?')) {
-        editor.value = '';
-        updateStats();
-        save();
-      }
-    });
-
-    updateStats();
+    // Initial boot logic
+    if (binId) {
+      loadFromCloud(binId);
+    } else {
+      editor.value = localStorage.getItem('local_draft_text') || '';
+      titleInput.value = localStorage.getItem('local_draft_title') || 'Untitled Note';
+      updateStats();
+    }
   </script>
 </body>
 </html>
