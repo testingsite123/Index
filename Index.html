@@ -1,697 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Restaurant Queue Management System</title>
-    <style>
-        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { margin: 0; padding: 20px; bg-color: #f5f7fb; background: #f5f7fb; }
-        h1 { text-align: center; color: #333; margin-bottom: 30px; }
-        
-        /* Dashboard Layout */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px;
-        }
-        
-        /* Panel Styles */
-        .panel {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            border-top: 5px solid #ccc;
-        }
-        #reception-panel { border-top-color: #3498db; }
-        #kitchen-panel { border-top-color: #e67e22; }
-        #customer-panel { border-top-color: #2ecc71; }
-        
-        h2 { margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }
-        
-        /* Form & Inputs */
-        .form-group { display: flex; gap: 10px; margin-bottom: 20px; }
-        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; }
-        button { padding: 10px 15px; border: none; background: #3498db; color: white; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        button:hover { opacity: 0.9; }
-        
-        /* List Items */
-        .order-list { list-style: none; padding: 0; margin: 0; }
-        .order-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: #f8f9fa;
-            margin-bottom: 10px;
-            border-radius: 6px;
-            border-left: 4px solid #ddd;
-        }
-        .kitchen-item { border-left-color: #e67e22; }
-        .customer-item { border-left-color: #2ecc71; font-size: 18px; }
-        
-        .btn-ready { background: #e67e22; }
-        .btn-serve { background: #2ecc71; }
-        
-        /* Customer Display Specifics */
-        .display-boards { display: flex; gap: 10px; margin-top: 15px; }
-        .board { flex: 1; text-align: center; padding: 15px; border-radius: 8px; }
-        .preparing-board { background: #fff3cd; color: #856404; }
-        .ready-board { background: #d4edda; color: #155724; font-size: 24px; font-weight: bold; animation: blink 1.5s infinite; }
-        
-        @keyframes blink {
-            0% { opacity: 1; }
-            50% { opacity: 0.6; }
-            100% { opacity: 1; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Browser Notepad</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+      --primary: #3b82f6;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    #doc-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: 1px solid transparent;
+      padding: 6px 10px;
+      border-radius: 6px;
+      outline: none;
+      color: var(--text);
+    }
+
+    #doc-title:hover, #doc-title:focus {
+      border-color: var(--border);
+      background: var(--bg);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    button {
+      padding: 6px 14px;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.15s ease;
+    }
+
+    button:hover { background: var(--bg); }
+    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.primary:hover { opacity: 0.9; }
+
+    main {
+      flex: 1;
+      display: flex;
+    }
+
+    #editor {
+      width: 100%;
+      height: 100%;
+      padding: 24px;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 1rem;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--panel);
+      font-family: inherit;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 20px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      background: var(--panel);
+    }
+  </style>
 </head>
 <body>
 
-    <h1>🍽️ Live Restaurant Queue Dashboard</h1>
-
-    <div class="dashboard">
-        
-        <div class="panel" id="reception-panel">
-            <h2>1. Reception (New Orders)</h2>
-            <div class="form-group">
-                <input type="text" id="customer-name" placeholder="Customer Name or Token #" required>
-                <button onclick="createNewOrder()">Send to Kitchen</button>
-            </div>
-            <h3>Active Queue Tracker</h3>
-            <ul id="reception-queue" class="order-list"></ul>
-        </div>
-
-        <div class="panel" id="kitchen-panel">
-            <h2>2. Kitchen Staff</h2>
-            <p style="color: #666; font-size: 0.9em;">Click "Order Ready" to move to pickup and trigger voice announcement.</p>
-            <ul id="kitchen-queue" class="order-list"></ul>
-        </div>
-
-        <div class="panel" id="customer-panel">
-            <h2>3. Customer TV Display</h2>
-            <div class="display-boards">
-                <div class="board preparing-board">
-                    <h3>Cooking ⏳</h3>
-                    <ul id="customer-preparing" class="order-list"></ul>
-                </div>
-                <div class="board ready-board">
-                    <h3>Please Pick Up 🎉</h3>
-                    <ul id="customer-ready" class="order-list"></ul>
-                </div>
-            </div>
-        </div>
-
+  <header>
+    <input type="text" id="doc-title" value="Untitled Note" />
+    <div class="btn-group">
+      <button id="copy-btn">Copy</button>
+      <button id="clear-btn">Clear</button>
+      <button id="download-btn" class="primary">Download (.txt)</button>
     </div>
+  </header>
 
-    <script>
-        // In-memory array state holding all active orders
-        // Order structure: { id: timestamp, name: string, status: 'preparing' | 'ready' }
-        let orders = [];
+  <main>
+    <textarea id="editor" placeholder="Start typing your notes..."></textarea>
+  </main>
 
-        // --- Core Functions ---
+  <footer>
+    <div id="stats">Words: 0 | Characters: 0</div>
+    <div id="save-status">Saved</div>
+  </footer>
 
-        // 1. Reception: Add new order
-        function createNewOrder() {
-            const nameInput = document.getElementById('customer-name');
-            const name = nameInput.value.trim();
-            
-            if (!name) return alert("Please enter a customer name or token number!");
+  <script>
+    const editor = document.getElementById('editor');
+    const titleInput = document.getElementById('doc-title');
+    const stats = document.getElementById('stats');
+    const saveStatus = document.getElementById('save-status');
 
-            const newOrder = {
-                id: Date.now(),
-                name: name,
-                status: 'preparing'
-            };
+    // Load saved content from localStorage
+    editor.value = localStorage.getItem('notepad_text') || '';
+    titleInput.value = localStorage.getItem('notepad_title') || 'Untitled Note';
 
-            orders.push(newOrder);
-            nameInput.value = ''; // clear input
-            updateInterfaces();
-        }
-
-        // 2. Kitchen: Mark order as Ready & Trigger Voice
-        function markAsReady(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = 'ready';
-                updateInterfaces();
-                announceOrderReady(order.name);
-            }
-        }
-
-        // 3. Customer/Staff: Clear / Dismiss served order from system
-        function completeOrder(orderId) {
-            orders = orders.filter(o => o.id !== orderId);
-            updateInterfaces();
-        }
-
-        // --- Voice Announcement Engine ---
-        function announceOrderReady(customerName) {
-            // Check if Web Speech API is supported
-            if ('speechSynthesis' in window) {
-                // Cancel any ongoing speech so it alerts immediately
-                window.speechSynthesis.cancel(); 
-
-                const message = `Attention please. Order for ${customerName} is ready for pickup.`;
-                const utterance = new SpeechSynthesisUtterance(message);
-                
-                // Optional tuning
-                utterance.rate = 0.95; // Slightly slower for clarity
-                utterance.pitch = 1.0; 
-                
-                window.speechSynthesis.speak(utterance);
-            } else {
-                console.log("Text-to-speech not supported in this browser.");
-            }
-        }
-
-        // --- UI Rendering Engine ---
-        function updateInterfaces() {
-            const receptionQueue = document.getElementById('reception-queue');
-            const kitchenQueue = document.getElementById('kitchen-queue');
-            const customerPreparing = document.getElementById('customer-preparing');
-            const customerReady = document.getElementById('customer-ready');
-
-            // Clear all views
-            receptionQueue.innerHTML = '';
-            kitchenQueue.innerHTML = '';
-            customerPreparing.innerHTML = '';
-            customerReady.innerHTML = '';
-
-            orders.forEach(order => {
-                // Render Reception Monitor View
-                const repLi = document.createElement('li');
-                repLi.className = 'order-item';
-                repLi.innerHTML = `<span><strong>${order.name}</strong></span> <small style="color: ${order.status === 'ready' ? 'green' : 'orange'}">${order.status.toUpperCase()}</small>`;
-                receptionQueue.appendChild(repLi);
-
-                if (order.status === 'preparing') {
-                    // Render Kitchen View
-                    const kitLi = document.createElement('li');
-                    kitLi.className = 'order-item kitchen-item';
-                    kitLi.innerHTML = `<span>🍳 ${order.name}</span> <button class="btn-ready" onclick="markAsReady(${order.id})">Order Ready</button>`;
-                    kitchenQueue.appendChild(kitLi);
-
-                    // Render Customer Preparing Column
-                    const custPrepLi = document.createElement('li');
-                    custPrepLi.className = 'order-item customer-item';
-                    custPrepLi.style.fontSize = '15px';
-                    custPrepLi.innerText = order.name;
-                    customerPreparing.appendChild(custPrepLi);
-                } 
-                
-                else if (order.status === 'ready') {
-                    // Render Customer Ready Column
-                    const custReadyLi = document.createElement('li');
-                    custReadyLi.className = 'order-item customer-item';
-                    custReadyLi.style.background = '#e2f7e7';
-                    custReadyLi.innerHTML = `<span>🔔 ${order.name}</span> <button class="btn-serve" onclick="completeOrder(${order.id})">Collected</button>`;
-                    customerReady.appendChild(custReadyLi);
-                }
-            });
-        }
-    </script>
-</body>
-</html>
-            display: flex;
-            flex-direction: column;
-        }
-
-        header {
-            background-color: var(--dark-bg);
-            color: var(--text-white);
-            padding: 20px 16px;
-            text-align: center;
-        }
-
-        header h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .categories {
-            display: flex;
-            gap: 8px;
-            padding: 16px;
-            background-color: var(--dark-bg);
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-
-        .categories::-webkit-scrollbar {
-            display: none;
-        }
-
-        .category-btn {
-            background-color: #2a2a2a;
-            color: #b3b3b3;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            cursor: pointer;
-        }
-
-        .category-btn.active {
-            background-color: var(--primary-orange);
-            color: var(--text-white);
-        }
-
-        .menu-list {
-            padding: 16px;
-            flex-grow: 1;
-            padding-bottom: 100px;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            background: #ffffff;
-            padding: 12px 0;
-            border-bottom: 1px solid #eee;
-        }
-
-        .item-img {
-            width: 80px;
-            height: 80px;
-            border-radius: 12px;
-            object-fit: cover;
-            background-color: #f0f0f0;
-            margin-right: 16px;
-        }
-
-        .item-details {
-            flex-grow: 1;
-        }
-
-        .item-name {
-            font-size: 1.05rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #111;
-        }
-
-        .item-price {
-            color: var(--primary-orange);
-            font-weight: 700;
-            font-size: 1rem;
-        }
-
-        .action-container {
-            min-width: 90px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .add-btn {
-            background: #ffffff;
-            color: #111;
-            border: 1px solid #ccc;
-            padding: 6px 20px;
-            border-radius: 6px;
-            font-weight: 700;
-            font-size: 0.85rem;
-            cursor: pointer;
-            width: 100%;
-            text-align: center;
-        }
-
-        .menu-qty-controls {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border: 1px solid var(--primary-orange);
-            border-radius: 6px;
-            width: 100%;
-            overflow: hidden;
-        }
-
-        .menu-qty-btn {
-            background: none;
-            border: none;
-            color: var(--primary-orange);
-            font-weight: 800;
-            font-size: 1.1rem;
-            padding: 5px 12px;
-            cursor: pointer;
-        }
-
-        .menu-qty-val {
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: #111;
-        }
-
-        .footer-cart {
-            position: sticky;
-            bottom: 0;
-            width: 100%;
-            background: #ffffff;
-            padding: 16px;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
-        }
-
-        .view-cart-btn {
-            background-color: var(--primary-orange);
-            color: var(--text-white);
-            width: 100%;
-            border: none;
-            padding: 16px;
-            border-radius: 12px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .cart-drawer {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%) translateY(100%);
-            width: 100%;
-            max-width: 480px;
-            background: #ffffff;
-            z-index: 1000;
-            transition: transform 0.3s ease-in-out;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 -5px 25px rgba(0,0,0,0.15);
-        }
-
-        .cart-drawer.open {
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .cart-header {
-            padding: 20px 16px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .close-cart {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        .cart-items-list {
-            padding: 16px;
-            flex-grow: 1;
-            overflow-y: auto;
-        }
-
-        .cart-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #f5f5f5;
-        }
-
-        .quantity-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .qty-btn {
-            background: #e0e0e0;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .qty-val {
-            font-weight: 600;
-            min-width: 16px;
-            text-align: center;
-        }
-
-        .cart-footer {
-            padding: 16px;
-            border-top: 1px solid #eee;
-            background: #fafafa;
-        }
-
-        .table-input-group {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-
-        .table-input-group label {
-            font-weight: 600;
-        }
-
-        .table-input-group input {
-            width: 90px;
-            padding: 8px;
-            border: 2px solid #ccc;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 1rem;
-            font-weight: bold;
-        }
-
-        .table-input-group input:focus {
-            outline: none;
-            border-color: var(--primary-orange);
-        }
-
-        .cart-notice {
-            background: #fff4e5;
-            color: #663c00;
-            padding: 10px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            margin-bottom: 16px;
-            border-left: 4px solid #ffa117;
-            font-weight: 500;
-        }
-
-        .sms-btn {
-            background-color: #25D366;
-            color: white;
-            width: 100%;
-            border: none;
-            padding: 14px;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            text-align: center;
-        }
-    </style>
-</head>
-<body>
-
-<div class="mobile-container">
-    <header>
-        <h1>Our Menu</h1>
-    </header>
-
-    <div class="categories">
-        <button class="category-btn active" onclick="filterCategory('all', this)">All</button>
-        <button class="category-btn" onclick="filterCategory('starters', this)">Starters</button>
-        <button class="category-btn" onclick="filterCategory('main course', this)">Main Course</button>
-        <button class="category-btn" onclick="filterCategory('beverages', this)">Beverages</button>
-    </div>
-
-    <div class="menu-list" id="menu-items-container"></div>
-
-    <div class="footer-cart">
-        <button class="view-cart-btn" onclick="toggleCart(true)">View Cart (<span id="cart-count">0</span>)</button>
-    </div>
-</div>
-
-<div class="cart-drawer" id="cart-drawer">
-    <div class="cart-header">
-        <h2>Your Order</h2>
-        <button class="close-cart" onclick="toggleCart(false)">&times;</button>
-    </div>
-    
-    <div class="cart-items-list" id="cart-items-container"></div>
-
-    <div class="cart-footer">
-        <div class="table-input-group">
-            <label for="table-number">Table Number <span style="color: red;">*</span>:</label>
-            <input type="number" id="table-number" min="1" max="50" placeholder="e.g. 5">
-        </div>
-
-        <div class="cart-notice">
-            ℹ️ Share the text message details at the billing counter to confirm your order and begin food preparation.
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-weight: bold;">
-            <span>Total:</span>
-            <span id="cart-total">₹0</span>
-        </div>
-        <button class="sms-btn" onclick="placeOrderDirectSMS()">Place Order via SMS</button>
-    </div>
-</div>
-
-<script>
-    const RESTAURANT_SMS_NUMBER = "9353427990"; 
-    let activeCategory = "all";
-
-    const menuData = [
-        { id: 1, name: "Margherita Pizza", price: 249, category: "main course", img: "https://images.unsplash.com/photo-1604382355076-af4b0eb60143?w=150" },
-        { id: 2, name: "Pasta Alfredo", price: 229, category: "main course", img: "https://images.unsplash.com/photo-1645112411341-6c4fd023714a?w=150" },
-        { id: 3, name: "Paneer Tikka", price: 199, category: "starters", img: "https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=150" },
-        { id: 4, name: "Lemonade", price: 99, category: "beverages", img: "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?w=150" }
-    ];
-
-    let cart = {};
-
-    function renderMenu() {
-        const container = document.getElementById('menu-items-container');
-        container.innerHTML = '';
-        
-        const filteredItems = activeCategory === 'all' ? menuData : menuData.filter(item => item.category === activeCategory);
-
-        filteredItems.forEach(item => {
-            const currentQty = cart[item.id] ? cart[item.id].quantity : 0;
-            let actionHtml = currentQty > 0 ? `
-                <div class="menu-qty-controls">
-                    <button class="menu-qty-btn" onclick="changeQuantity(${item.id}, -1)">-</button>
-                    <span class="menu-qty-val">${currentQty}</span>
-                    <button class="menu-qty-btn" onclick="changeQuantity(${item.id}, 1)">+</button>
-                </div>
-            ` : `<button class="add-btn" onclick="addToCart(${item.id})">ADD</button>`;
-
-            container.innerHTML += `
-                <div class="menu-item">
-                    <img class="item-img" src="${item.img}" alt="${item.name}">
-                    <div class="item-details">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-price">₹${item.price}</div>
-                    </div>
-                    <div class="action-container">${actionHtml}</div>
-                </div>
-            `;
-        });
+    function updateStats() {
+      const text = editor.value.trim();
+      const words = text ? text.split(/\s+/).length : 0;
+      const chars = editor.value.length;
+      stats.textContent = `Words: ${words} | Characters: ${chars}`;
     }
 
-    function filterCategory(category, button) {
-        document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-        button.classList.add('active');
-        activeCategory = category;
-        renderMenu();
+    function save() {
+      localStorage.setItem('notepad_text', editor.value);
+      localStorage.setItem('notepad_title', titleInput.value);
+      saveStatus.textContent = 'Saved';
     }
 
-    // Handles adding item to structural dynamic data object matrix
-    function addToCart(id) {
-        if(cart[id]) { cart[id].quantity += 1; } 
-        else { cart[id] = { ...menuData.find(p => p.id === id), quantity: 1 }; }
-        updateCartUI();
-        renderMenu();
-    }
-
-    function changeQuantity(id, delta) {
-        if (!cart[id]) return;
-        cart[id].quantity += delta;
-        if (cart[id].quantity <= 0) delete cart[id];
-        updateCartUI();
-        renderMenu();
-    }
-
-    function updateCartUI() {
-        let totalItems = 0, totalPrice = 0;
-        const cartContainer = document.getElementById('cart-items-container');
-        cartContainer.innerHTML = '';
-
-        Object.values(cart).forEach(item => {
-            totalItems += item.quantity;
-            totalPrice += item.price * item.quantity;
-            cartContainer.innerHTML += `
-                <div class="cart-item">
-                    <div>
-                        <div style="font-weight:600;">${item.name}</div>
-                        <div style="color:var(--primary-orange); font-size:0.9rem;">₹${item.price * item.quantity}</div>
-                    </div>
-                    <div class="quantity-controls">
-                        <button class="qty-btn" onclick="changeQuantity(${item.id}, -1)">-</button>
-                        <span class="qty-val">${item.quantity}</span>
-                        <button class="qty-btn" onclick="changeQuantity(${item.id}, 1)">+</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        document.getElementById('cart-count').innerText = totalItems;
-        document.getElementById('cart-total').innerText = `₹${totalPrice}`;
-        if (totalItems === 0) {
-            cartContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Your cart is empty</p>';
-        }
-    }
-
-    function toggleCart(isOpen) {
-        const drawer = document.getElementById('cart-drawer');
-        if(isOpen) drawer.classList.add('open');
-        else drawer.classList.remove('open');
-    }
-
-    function placeOrderDirectSMS() {
-        const tableField = document.getElementById('table-number');
-        const tableNum = tableField.value.trim();
-        const cartItems = Object.values(cart);
-        
-        if (cartItems.length === 0) {
-            alert("Cart is empty!");
-            return;
-        }
-
-        if (!tableNum || parseInt(tableNum) <= 0) {
-            alert("Enter a valid Table Number!");
-            tableField.focus();
-            return;
-        }
-
-        // Generate Short unique 4-Character Order ID mapping string
-        const randomNum = Math.floor(10 + Math.random() * 90); 
-        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ"; 
-        const c1 = chars.charAt(Math.floor(Math.random() * chars.length));
-        const c2 = chars.charAt(Math.floor(Math.random() * chars.length));
-        const shortID = `${c1}${randomNum}${c2}`;
-
-        // Condensed detailed text string formatting structure
-        let textMessage = `ORDER ID: ${shortID}\nTBL: ${tableNum}\n`;
-        let total = 0;
-        cartItems.forEach(item => {
-            textMessage += `${item.name} x${item.quantity}\n`;
-            total += item.price * item.quantity;
-        });
-        textMessage += `TOTAL: ₹${total}\n\n[Please present this Order ID at the billing counter to confirm your order details and begin food preparation.]`;
-
-        // Direct SMS framework intent execution
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const separator = isIOS ? '&' : '?';
-        window.location.href = `sms:${RESTAURANT_SMS_NUMBER}${separator}body=${encodeURIComponent(textMessage)}`;
-
-        // Global states reset configuration parameters
-        cart = {};
-        tableField.value = "";
-        updateCartUI();
-        renderMenu();
-        toggleCart(false);
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-        renderMenu();
+    editor.addEventListener('input', () => {
+      saveStatus.textContent = 'Saving...';
+      updateStats();
+      save();
     });
-</script>
 
+    titleInput.addEventListener('input', save);
+
+    document.getElementById('download-btn').addEventListener('click', () => {
+      const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${titleInput.value.trim() || 'Note'}.txt`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', async () => {
+      await navigator.clipboard.writeText(editor.value);
+      const originalText = document.getElementById('copy-btn').textContent;
+      document.getElementById('copy-btn').textContent = 'Copied!';
+      setTimeout(() => document.getElementById('copy-btn').textContent = originalText, 1500);
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      if (confirm('Clear note contents?')) {
+        editor.value = '';
+        updateStats();
+        save();
+      }
+    });
+
+    updateStats();
+  </script>
 </body>
 </html>
