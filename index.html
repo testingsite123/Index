@@ -42,7 +42,7 @@
       align-items: center;
       gap: 10px;
       flex: 1;
-      min-width: 240px;
+      min-width: 200px;
     }
 
     #doc-title {
@@ -66,10 +66,11 @@
       display: flex;
       gap: 8px;
       align-items: center;
+      flex-wrap: wrap;
     }
 
     button {
-      padding: 6px 12px;
+      padding: 6px 14px;
       font-size: 0.85rem;
       border: 1px solid var(--border);
       background: var(--panel);
@@ -77,33 +78,12 @@
       border-radius: 6px;
       cursor: pointer;
       font-weight: 500;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+      transition: background 0.15s ease;
     }
 
     button:hover { background: var(--bg); }
     button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
     button.primary:hover { opacity: 0.9; }
-
-    /* Configuration bar */
-    #config-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 6px 20px;
-      background: #f1f5f9;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.8rem;
-    }
-
-    #config-bar input {
-      padding: 4px 8px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 0.8rem;
-      width: 250px;
-    }
 
     main {
       flex: 1;
@@ -144,20 +124,14 @@
 
     <div class="btn-group">
       <button id="cloud-save-btn" class="primary">☁️ Save Online</button>
+      <button id="new-note-btn">+ New Note</button>
       <button id="copy-share-btn">🔗 Share Link</button>
       <button id="download-btn">Download (.txt)</button>
     </div>
   </header>
 
-  <!-- Cloud API Settings -->
-  <div id="config-bar">
-    <label for="api-key"><strong>JSONBin Access Key:</strong></label>
-    <input type="password" id="api-key" placeholder="Paste Master Key ($2a$10$...)" />
-    <span style="color: var(--muted);">(Free key from jsonbin.io required for private cloud saves)</span>
-  </div>
-
   <main>
-    <textarea id="editor" placeholder="Type here..."></textarea>
+    <textarea id="editor" placeholder="Start typing your note here..."></textarea>
   </main>
 
   <footer>
@@ -170,60 +144,52 @@
     const titleInput = document.getElementById('doc-title');
     const stats = document.getElementById('stats');
     const statusText = document.getElementById('status');
-    const apiKeyInput = document.getElementById('api-key');
 
-    // Check for note ID in URL query params
-    const urlParams = new URLSearchParams(window.location.search);
-    let binId = urlParams.get('id') || localStorage.getItem('active_bin_id');
+    // Public key-value namespace
+    const API_BASE = 'https://kvdb.io/An9YVf4K4Qk8p7B5m1WvQe/';
+    
+    // Check if a note ID is in the URL hash (#note_...)
+    let noteId = window.location.hash.replace('#', '');
 
-    // Restore API Key
-    apiKeyInput.value = localStorage.getItem('jsonbin_key') || '';
-    apiKeyInput.addEventListener('change', () => {
-      localStorage.setItem('jsonbin_key', apiKeyInput.value.trim());
-    });
-
-    // Local autosave fallback
     function updateStats() {
       const text = editor.value.trim();
       const words = text ? text.split(/\s+/).length : 0;
       stats.textContent = `Words: ${words} | Characters: ${editor.value.length}`;
     }
 
-    editor.addEventListener('input', () => {
-      updateStats();
-      localStorage.setItem('local_draft_text', editor.value);
-      localStorage.setItem('local_draft_title', titleInput.value);
-    });
+    function autoSaveLocal() {
+      if (!noteId) {
+        localStorage.setItem('local_draft_text', editor.value);
+        localStorage.setItem('local_draft_title', titleInput.value);
+      }
+    }
 
-    // Load Note from Cloud
+    // Load note from cloud
     async function loadFromCloud(id) {
-      const key = apiKeyInput.value.trim();
       statusText.textContent = 'Fetching note from cloud...';
-
       try {
-        const headers = key ? { 'X-Master-Key': key } : {};
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${id}/latest`, { headers });
-        if (!res.ok) throw new Error('Cloud note not found');
-
+        const res = await fetch(`${API_BASE}${id}`);
+        if (!res.ok) throw new Error('Note not found or expired');
+        
         const data = await res.json();
-        editor.value = data.record.content || '';
-        titleInput.value = data.record.title || 'Untitled Note';
-        statusText.textContent = 'Loaded from cloud';
+        editor.value = data.content || '';
+        titleInput.value = data.title || 'Untitled Note';
+        statusText.textContent = 'Cloud note loaded';
         updateStats();
       } catch (err) {
         statusText.textContent = `Load failed: ${err.message}`;
       }
     }
 
-    // Save Note to Cloud (Create or Update)
+    // Save note to cloud
     async function saveToCloud() {
-      const key = apiKeyInput.value.trim();
-      if (!key) {
-        alert('Please enter your JSONBin Access Key in the bar above.\nSign up free at jsonbin.io to obtain your Master Key.');
-        return;
+      statusText.textContent = 'Saving online...';
+
+      if (!noteId) {
+        noteId = 'note_' + Math.random().toString(36).substring(2, 10);
+        window.location.hash = noteId;
       }
 
-      statusText.textContent = 'Saving to cloud...';
       const payload = {
         title: titleInput.value,
         content: editor.value,
@@ -231,69 +197,64 @@
       };
 
       try {
-        let res;
-        if (binId) {
-          // Update existing bin
-          res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Master-Key': key
-            },
-            body: JSON.stringify(payload)
-          });
-        } else {
-          // Create new bin
-          res = await fetch('https://api.jsonbin.io/v3/b', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Master-Key': key,
-              'X-Bin-Private': 'true',
-              'X-Bin-Name': titleInput.value || 'Notepad Entry'
-            },
-            body: JSON.stringify(payload)
-          });
-        }
+        const res = await fetch(`${API_BASE}${noteId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || 'Error saving');
+        if (!res.ok) throw new Error('Cloud server rejected save');
 
-        if (!binId && data.metadata && data.metadata.id) {
-          binId = data.metadata.id;
-          localStorage.setItem('active_bin_id', binId);
-          const newUrl = `${window.location.protocol}//${window.location.host}${window.location.pathname}?id=${binId}`;
-          window.history.replaceState({ path: newUrl }, '', newUrl);
-        }
-
-        statusText.textContent = 'Cloud synced successfully!';
+        statusText.textContent = 'Saved online!';
+        setTimeout(() => { statusText.textContent = 'Ready'; }, 2000);
       } catch (err) {
-        statusText.textContent = `Cloud save failed: ${err.message}`;
+        statusText.textContent = `Save failed: ${err.message}`;
       }
     }
+
+    // UI Listeners
+    editor.addEventListener('input', () => {
+      updateStats();
+      autoSaveLocal();
+    });
+
+    titleInput.addEventListener('input', autoSaveLocal);
 
     document.getElementById('cloud-save-btn').addEventListener('click', saveToCloud);
 
     document.getElementById('copy-share-btn').addEventListener('click', async () => {
-      if (!binId) {
-        alert('Please save the note online first to generate a cloud link.');
-        return;
+      if (!noteId) {
+        await saveToCloud();
       }
       await navigator.clipboard.writeText(window.location.href);
-      alert('Note link copied to clipboard!');
+      const originalText = document.getElementById('copy-share-btn').textContent;
+      document.getElementById('copy-share-btn').textContent = 'Copied!';
+      setTimeout(() => {
+        document.getElementById('copy-share-btn').textContent = originalText;
+      }, 1500);
+    });
+
+    document.getElementById('new-note-btn').addEventListener('click', () => {
+      noteId = '';
+      window.location.hash = '';
+      editor.value = '';
+      titleInput.value = 'Untitled Note';
+      updateStats();
+      statusText.textContent = 'New note started';
     });
 
     document.getElementById('download-btn').addEventListener('click', () => {
       const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `${titleInput.value || 'note'}.txt`;
+      a.download = `${titleInput.value.trim() || 'note'}.txt`;
       a.click();
+      URL.revokeObjectURL(a.href);
     });
 
-    // Initial boot logic
-    if (binId) {
-      loadFromCloud(binId);
+    // Boot Initialization
+    if (noteId) {
+      loadFromCloud(noteId);
     } else {
       editor.value = localStorage.getItem('local_draft_text') || '';
       titleInput.value = localStorage.getItem('local_draft_title') || 'Untitled Note';
