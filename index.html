@@ -3,263 +3,456 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cloud Notepad</title>
+  <title>Chat-Themed Text Sync</title>
   <style>
+    /* Default: Light Chat Theme */
     :root {
-      --bg: #f8fafc;
-      --panel: #ffffff;
-      --text: #1e293b;
-      --border: #e2e8f0;
-      --primary: #2563eb;
-      --success: #16a34a;
-      --muted: #64748b;
+      --bg-app: #efeae2;
+      --chat-container: #ffffff;
+      --header-bg: #f0f2f5;
+      --border-color: #d1d7db;
+      --text-main: #111b21;
+      --text-muted: #667781;
+      --primary: #00a884;
+      --primary-hover: #008f6f;
+      
+      /* Bubble Colors */
+      --bubble-left-bg: #d9fdd3;
+      --bubble-right-bg: #ffffff;
+      --bubble-border: #e9edef;
+      --meta-text: #667781;
+      --danger: #ea4335;
+      --shadow: 0 4px 16px rgba(11, 20, 26, 0.08);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Dark Chat Theme */
+    body.dark-theme {
+      --bg-app: #0c1317;
+      --chat-container: #111b21;
+      --header-bg: #202c33;
+      --border-color: #2a3942;
+      --text-main: #e9edef;
+      --text-muted: #8696a0;
+      --primary: #00a884;
+      --primary-hover: #029071;
+
+      /* Bubble Colors */
+      --bubble-left-bg: #005c4b;
+      --bubble-right-bg: #202c33;
+      --bubble-border: #222e35;
+      --meta-text: #aebac1;
+      --danger: #ef4444;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .chat-window {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--chat-container);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 90vh;
+      max-height: 820px;
+      border: 1px solid var(--border-color);
     }
 
-    header {
+    /* Top Chat Navigation Header */
+    .chat-header {
+      background: var(--header-bg);
+      padding: 0.85rem 1.25rem;
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 10px 20px;
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
     }
 
-    .title-area {
+    .user-info {
       display: flex;
       align-items: center;
-      gap: 10px;
-      flex: 1;
-      min-width: 200px;
+      gap: 0.75rem;
     }
 
-    #doc-title {
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #00a884, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
       font-size: 1.1rem;
+    }
+
+    .user-details h1 {
+      font-size: 1rem;
       font-weight: 600;
-      border: 1px solid transparent;
-      padding: 6px 10px;
-      border-radius: 6px;
-      outline: none;
-      color: var(--text);
-      width: 100%;
-      max-width: 320px;
+      line-height: 1.2;
     }
 
-    #doc-title:focus {
-      border-color: var(--border);
-      background: var(--bg);
-    }
-
-    .btn-group {
+    .user-details .status-online {
+      font-size: 0.75rem;
+      color: var(--primary);
       display: flex;
-      gap: 8px;
       align-items: center;
-      flex-wrap: wrap;
+      gap: 0.35rem;
     }
 
-    button {
-      padding: 6px 14px;
-      font-size: 0.85rem;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      border-radius: 6px;
-      cursor: pointer;
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .header-actions button {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.45rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.82rem;
       font-weight: 500;
+      cursor: pointer;
       transition: background 0.15s ease;
     }
 
-    button:hover { background: var(--bg); }
-    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-    button.primary:hover { opacity: 0.9; }
+    .header-actions button:hover {
+      background: var(--border-color);
+    }
 
-    main {
+    /* Split Screen Chat Panels */
+    .chat-body {
       flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--bg-app);
+      gap: 1rem;
+      padding: 1.25rem;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 768px) {
+      .chat-body {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+    }
+
+    /* Chat Message Bubble Panels */
+    .chat-bubble-panel {
       display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--bubble-border);
+      position: relative;
     }
 
-    #editor {
-      width: 100%;
-      height: 100%;
-      padding: 20px;
-      border: none;
-      outline: none;
-      resize: none;
-      font-size: 1rem;
-      line-height: 1.6;
-      color: var(--text);
-      background: var(--panel);
-      font-family: inherit;
+    .chat-bubble-panel.outgoing {
+      background: var(--bubble-left-bg);
     }
 
-    footer {
+    .chat-bubble-panel.incoming {
+      background: var(--bubble-right-bg);
+    }
+
+    .panel-meta-top {
       display: flex;
       justify-content: space-between;
-      padding: 8px 20px;
-      font-size: 0.8rem;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      background: var(--panel);
+      align-items: center;
+      margin-bottom: 0.75rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--primary);
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 0.4rem;
+    }
+
+    .bubble-role {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-main);
+      font-family: inherit;
+      font-size: 0.95rem;
+      line-height: 1.5;
+      resize: none;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
+    textarea:read-only {
+      cursor: default;
+    }
+
+    /* Bubble Footer */
+    .bubble-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--meta-text);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .check-mark {
+      color: var(--primary);
+      font-weight: bold;
+    }
+
+    /* Bottom Info Status Bar */
+    .chat-status-bar {
+      background: var(--header-bg);
+      padding: 0.6rem 1.25rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-color);
+      font-family: ui-monospace, SFMono-Regular, monospace;
     }
   </style>
 </head>
 <body>
 
-  <header>
-    <div class="title-area">
-      <input type="text" id="doc-title" value="Untitled Note" />
-    </div>
+  <div class="chat-window">
+    <!-- Chat Header -->
+    <header class="chat-header">
+      <div class="user-info">
+        <div class="avatar">💬</div>
+        <div class="user-details">
+          <h1>Sync Conversation</h1>
+          <div class="status-online">
+            <span class="status-dot"></span>
+            <span>real-time microsecond bridge active</span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggleBtn" type="button">🌙 Dark Theme</button>
+      </div>
+    </header>
 
-    <div class="btn-group">
-      <button id="cloud-save-btn" class="primary">☁️ Save Online</button>
-      <button id="new-note-btn">+ New Note</button>
-      <button id="copy-share-btn">🔗 Share Link</button>
-      <button id="download-btn">Download (.txt)</button>
-    </div>
-  </header>
+    <!-- Chat Messages Split View -->
+    <main class="chat-body">
+      <!-- SENDER PANEL (LEFT) -->
+      <section class="chat-bubble-panel outgoing">
+        <div class="panel-meta-top">
+          <div class="bubble-role">
+            <span>👤 You (Typing...)</span>
+          </div>
+          <span id="writeStats">0 chars</span>
+        </div>
 
-  <main>
-    <textarea id="editor" placeholder="Start typing your note here..."></textarea>
-  </main>
+        <textarea id="writeEditor" placeholder="Type a message... (backspace deletes letter-by-letter live)"></textarea>
 
-  <footer>
-    <div id="stats">Words: 0 | Characters: 0</div>
-    <div id="status">Ready</div>
-  </footer>
+        <div class="bubble-footer">
+          <span id="saveMicroTime">Idle</span>
+          <span class="check-mark">✓✓</span>
+        </div>
+      </section>
+
+      <!-- RECEIVER PANEL (RIGHT) -->
+      <section class="chat-bubble-panel incoming">
+        <div class="panel-meta-top">
+          <div class="bubble-role">
+            <span>🤖 Receiver (Auto-Stream)</span>
+          </div>
+          <span id="readStats">0 chars</span>
+        </div>
+
+        <textarea id="readViewer" readonly placeholder="Received text streams here in microseconds..."></textarea>
+
+        <div class="bubble-footer">
+          <span id="loadMicroTime">Awaiting stream...</span>
+          <span class="check-mark">✓✓</span>
+        </div>
+      </section>
+    </main>
+
+    <!-- Chat Status Footer -->
+    <footer class="chat-status-bar">
+      <span id="statusMessage">Conversation synced</span>
+      <span id="syncLatencyInfo">Latency: 0 µs</span>
+    </footer>
+  </div>
 
   <script>
-    const editor = document.getElementById('editor');
-    const titleInput = document.getElementById('doc-title');
-    const stats = document.getElementById('stats');
-    const statusText = document.getElementById('status');
+    const writeEditor = document.getElementById('writeEditor');
+    const readViewer = document.getElementById('readViewer');
+    const writeStats = document.getElementById('writeStats');
+    const readStats = document.getElementById('readStats');
+    const saveMicroTime = document.getElementById('saveMicroTime');
+    const loadMicroTime = document.getElementById('loadMicroTime');
+    const statusMessage = document.getElementById('statusMessage');
+    const syncLatencyInfo = document.getElementById('syncLatencyInfo');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
 
-    // Public key-value namespace
-    const API_BASE = 'https://kvdb.io/An9YVf4K4Qk8p7B5m1WvQe/';
-    
-    // Check if a note ID is in the URL hash (#note_...)
-    let noteId = window.location.hash.replace('#', '');
+    const STORAGE_KEY = 'chat_sync_text_data';
+    const THEME_KEY = 'chat_sync_text_theme';
+    const SYNC_BUFFER_MS = 25; // Debounce window for rapid typing/deleting
+    let autoSyncTimer = null;
 
-    function updateStats() {
-      const text = editor.value.trim();
-      const words = text ? text.split(/\s+/).length : 0;
-      stats.textContent = `Words: ${words} | Characters: ${editor.value.length}`;
+    // Returns microsecond-precision string
+    function getMicroTime() {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const pNow = performance.now();
+      const micros = Math.floor((pNow % 1000) * 1000).toString().padStart(6, '0');
+      return `${timeStr}.${micros} µs`;
     }
 
-    function autoSaveLocal() {
-      if (!noteId) {
-        localStorage.setItem('local_draft_text', editor.value);
-        localStorage.setItem('local_draft_title', titleInput.value);
-      }
+    function updateCounts(textarea, targetEl) {
+      const val = textarea.value;
+      const chars = val.length;
+      const words = val.trim() === '' ? 0 : val.trim().split(/\s+/).length;
+      targetEl.textContent = `${chars} chars | ${words} words`;
     }
 
-    // Load note from cloud
-    async function loadFromCloud(id) {
-      statusText.textContent = 'Fetching note from cloud...';
-      try {
-        const res = await fetch(`${API_BASE}${id}`);
-        if (!res.ok) throw new Error('Note not found or expired');
-        
-        const data = await res.json();
-        editor.value = data.content || '';
-        titleInput.value = data.title || 'Untitled Note';
-        statusText.textContent = 'Cloud note loaded';
-        updateStats();
-      } catch (err) {
-        statusText.textContent = `Load failed: ${err.message}`;
-      }
-    }
-
-    // Save note to cloud
-    async function saveToCloud() {
-      statusText.textContent = 'Saving online...';
-
-      if (!noteId) {
-        noteId = 'note_' + Math.random().toString(36).substring(2, 10);
-        window.location.hash = noteId;
-      }
-
-      const payload = {
-        title: titleInput.value,
-        content: editor.value,
-        updatedAt: new Date().toISOString()
-      };
+    // Auto-Save, Auto-Load, and live character backspace pipeline
+    function executeAutoSync() {
+      const content = writeEditor.value;
+      const t0 = performance.now();
 
       try {
-        const res = await fetch(`${API_BASE}${noteId}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+        // If user completely deleted all text via backspace, clear storage
+        if (content.trim() === '') {
+          localStorage.removeItem(STORAGE_KEY);
+          readViewer.value = '';
+          updateCounts(readViewer, readStats);
 
-        if (!res.ok) throw new Error('Cloud server rejected save');
+          const t1 = performance.now();
+          const elapsedUs = Math.round((t1 - t0) * 1000);
+          saveMicroTime.textContent = `Cleared @ ${getMicroTime()}`;
+          loadMicroTime.textContent = 'Storage cleared';
+          statusMessage.textContent = 'All messages erased';
+          syncLatencyInfo.textContent = `Latency: ${elapsedUs} µs`;
+          return;
+        }
 
-        statusText.textContent = 'Saved online!';
-        setTimeout(() => { statusText.textContent = 'Ready'; }, 2000);
+        // 1. Save to LocalStorage
+        localStorage.setItem(STORAGE_KEY, content);
+        const tSave = performance.now();
+        const saveElapsedUs = Math.round((tSave - t0) * 1000);
+        saveMicroTime.textContent = `Sent @ ${getMicroTime()} (${saveElapsedUs} µs)`;
+
+        // 2. Read into right viewer
+        const loadedData = localStorage.getItem(STORAGE_KEY);
+        if (loadedData !== null) {
+          readViewer.value = loadedData;
+          updateCounts(readViewer, readStats);
+          const tLoad = performance.now();
+          const totalElapsedUs = Math.round((tLoad - t0) * 1000);
+          loadMicroTime.textContent = `Delivered (${totalElapsedUs} µs)`;
+          statusMessage.textContent = `Message synced in ${totalElapsedUs} µs`;
+          syncLatencyInfo.textContent = `Latency: ${totalElapsedUs} µs`;
+        }
       } catch (err) {
-        statusText.textContent = `Save failed: ${err.message}`;
+        statusMessage.textContent = 'Storage access failed';
       }
     }
 
-    // UI Listeners
-    editor.addEventListener('input', () => {
-      updateStats();
-      autoSaveLocal();
+    // Listen to standard input (preserves native single-character backspace/delete)
+    writeEditor.addEventListener('input', () => {
+      updateCounts(writeEditor, writeStats);
+      clearTimeout(autoSyncTimer);
+      autoSyncTimer = setTimeout(executeAutoSync, SYNC_BUFFER_MS);
     });
 
-    titleInput.addEventListener('input', autoSaveLocal);
-
-    document.getElementById('cloud-save-btn').addEventListener('click', saveToCloud);
-
-    document.getElementById('copy-share-btn').addEventListener('click', async () => {
-      if (!noteId) {
-        await saveToCloud();
+    // Cross-tab synchronization
+    window.addEventListener('storage', (e) => {
+      if (e.key === STORAGE_KEY) {
+        if (e.newValue && e.newValue.trim() !== '') {
+          readViewer.value = e.newValue;
+          writeEditor.value = e.newValue;
+          updateCounts(readViewer, readStats);
+          updateCounts(writeEditor, writeStats);
+          loadMicroTime.textContent = `Received external @ ${getMicroTime()}`;
+        } else {
+          readViewer.value = '';
+          writeEditor.value = '';
+          updateCounts(readViewer, readStats);
+          updateCounts(writeEditor, writeStats);
+          loadMicroTime.textContent = `External clear @ ${getMicroTime()}`;
+        }
       }
-      await navigator.clipboard.writeText(window.location.href);
-      const originalText = document.getElementById('copy-share-btn').textContent;
-      document.getElementById('copy-share-btn').textContent = 'Copied!';
-      setTimeout(() => {
-        document.getElementById('copy-share-btn').textContent = originalText;
-      }, 1500);
     });
 
-    document.getElementById('new-note-btn').addEventListener('click', () => {
-      noteId = '';
-      window.location.hash = '';
-      editor.value = '';
-      titleInput.value = 'Untitled Note';
-      updateStats();
-      statusText.textContent = 'New note started';
-    });
-
-    document.getElementById('download-btn').addEventListener('click', () => {
-      const blob = new Blob([editor.value], { type: 'text/plain;charset=utf-8' });
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `${titleInput.value.trim() || 'note'}.txt`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
-
-    // Boot Initialization
-    if (noteId) {
-      loadFromCloud(noteId);
-    } else {
-      editor.value = localStorage.getItem('local_draft_text') || '';
-      titleInput.value = localStorage.getItem('local_draft_title') || 'Untitled Note';
-      updateStats();
+    // Theme Switcher
+    function applyTheme(isDark) {
+      if (isDark) {
+        document.body.classList.add('dark-theme');
+        themeToggleBtn.textContent = '☀️ Light Theme';
+      } else {
+        document.body.classList.remove('dark-theme');
+        themeToggleBtn.textContent = '🌙 Dark Theme';
+      }
     }
+
+    themeToggleBtn.addEventListener('click', () => {
+      const isDark = document.body.classList.toggle('dark-theme');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      applyTheme(isDark);
+    });
+
+    // Initial Load
+    window.addEventListener('DOMContentLoaded', () => {
+      try {
+        const savedTheme = localStorage.getItem(THEME_KEY);
+        applyTheme(savedTheme === 'dark');
+
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved && saved.trim() !== '') {
+          writeEditor.value = saved;
+          readViewer.value = saved;
+          updateCounts(writeEditor, writeStats);
+          updateCounts(readViewer, readStats);
+          saveMicroTime.textContent = `Restored session`;
+          loadMicroTime.textContent = `Restored`;
+        }
+      } catch (err) {}
+    });
   </script>
 </body>
 </html>
